@@ -1,0 +1,1273 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Spannometro</title>
+<meta name="description" content="Mental math per il market making di opzioni">
+<meta name="theme-color" content="#E8ECF0" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0D1116" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Spannometro">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+@font-face{font-family:'Big Shoulders Display';font-style:normal;font-weight:700;font-display:swap;src:url(./fonts/big-shoulders-display-latin-700-normal.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'Big Shoulders Display';font-style:normal;font-weight:800;font-display:swap;src:url(./fonts/big-shoulders-display-latin-800-normal.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'Martian Mono';font-style:normal;font-weight:400;font-display:swap;src:url(./fonts/martian-mono-latin-400-normal.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'Martian Mono';font-style:normal;font-weight:600;font-display:swap;src:url(./fonts/martian-mono-latin-600-normal.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'Schibsted Grotesk';font-style:normal;font-weight:400;font-display:swap;src:url(./fonts/schibsted-grotesk-latin-400-normal.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'Schibsted Grotesk';font-style:normal;font-weight:500;font-display:swap;src:url(./fonts/schibsted-grotesk-latin-500-normal.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'Schibsted Grotesk';font-style:normal;font-weight:600;font-display:swap;src:url(./fonts/schibsted-grotesk-latin-600-normal.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'Schibsted Grotesk';font-style:normal;font-weight:700;font-display:swap;src:url(./fonts/schibsted-grotesk-latin-700-normal.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<style>
+/* Layout: trade-ticket drill card (fields → perforation → answer) on the left, stats ledger on the right; one column on phones */
+:root {
+  --bg: #E8ECF0;
+  --surface: #FFFFFF;
+  --surface-2: #F2F4F7;
+  --ink: #111720;
+  --muted: #5A6473;
+  --line: #D2D8DF;
+  --line-strong: #AEB7C2;
+  --bid: #1C57CC;
+  --offer: #C4372A;
+  --good: #17784A;
+  --good-bg: #E1F2E8;
+  --bad: #C4372A;
+  --bad-bg: #FBE6E2;
+  --amber: #D39200;
+  --amber-soft: rgba(211,146,0,.28);
+  --on-ink: #FFFFFF;
+  --f-display: "Big Shoulders Display", "Arial Narrow", "Roboto Condensed", system-ui, sans-serif;
+  --f-body: "Schibsted Grotesk", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --f-mono: "Martian Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0D1116; --surface: #161C24; --surface-2: #1D242E; --ink: #E7EBF1; --muted: #8E98A6;
+    --line: #29313C; --line-strong: #3C4654; --bid: #77A6FF; --offer: #FF8072; --good: #4DC284;
+    --good-bg: #11301F; --bad: #FF8072; --bad-bg: #3A1915; --amber: #F2BE3C; --amber-soft: rgba(242,190,60,.3);
+    --on-ink: #0D1116; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0D1116; --surface: #161C24; --surface-2: #1D242E; --ink: #E7EBF1; --muted: #8E98A6;
+  --line: #29313C; --line-strong: #3C4654; --bid: #77A6FF; --offer: #FF8072; --good: #4DC284;
+  --good-bg: #11301F; --bad: #FF8072; --bad-bg: #3A1915; --amber: #F2BE3C; --amber-soft: rgba(242,190,60,.3);
+  --on-ink: #0D1116; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.45; -webkit-text-size-adjust: 100%; }
+.app { max-width: 1100px; margin: 0 auto; padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); padding-block: 14px 40px; }
+button { font: inherit; color: inherit; }
+button:focus-visible, input:focus-visible, summary:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+
+/* header */
+.top { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; padding-bottom: 12px; }
+.brand h1 { font-family: var(--f-display); font-weight: 800; font-size: 2.1rem; line-height: .9; letter-spacing: .01em; text-transform: uppercase; margin: 0; }
+.brand h1 span { color: var(--amber); }
+.brand p { margin: 4px 0 0; color: var(--muted); font-size: .86rem; }
+.pill { font-family: var(--f-mono); font-size: .78rem; border: 1px solid var(--line-strong); border-radius: 999px; padding: 5px 11px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.pill.live { border-color: var(--amber); color: var(--ink); background: var(--amber-soft); }
+
+/* grid */
+.grid { display: grid; gap: 18px; }
+@media (min-width: 900px) {
+  .grid { grid-template-columns: minmax(0, 1.12fr) minmax(0, .88fr); gap: 28px; align-items: start; }
+  .side { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); }
+}
+.drill { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.side { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
+
+/* settings */
+.settings { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.settings summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 14px; }
+.settings summary::-webkit-details-marker { display: none; }
+.sum-l { font-weight: 600; font-size: .9rem; display: flex; align-items: center; gap: 8px; }
+.sum-l::before { content: ""; width: 7px; height: 7px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: rotate(-45deg); transition: transform .15s; }
+.settings[open] .sum-l::before { transform: rotate(45deg); }
+.sum-v { color: var(--muted); font-size: .8rem; text-align: right; }
+.set-body { padding: 4px 14px 14px; display: flex; flex-direction: column; gap: 14px; border-top: 1px solid var(--line); }
+.set-h { font-size: .7rem; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); font-weight: 600; margin: 10px 0 6px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { border: 1px solid var(--line-strong); background: var(--surface); border-radius: 8px; padding: 6px 10px; cursor: pointer; text-align: left; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.chip b { font-weight: 600; font-size: .86rem; }
+.chip small { color: var(--muted); font-size: .72rem; }
+.chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
+.chip[aria-pressed="true"] small { color: inherit; opacity: .72; }
+.set-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.set-row > span { font-size: .86rem; font-weight: 500; }
+.seg { display: inline-flex; border: 1px solid var(--line-strong); border-radius: 8px; overflow: hidden; }
+.seg button { border: 0; background: transparent; padding: 6px 11px; font-size: .82rem; cursor: pointer; border-left: 1px solid var(--line-strong); }
+.seg button:first-child { border-left: 0; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--on-ink); }
+.check { display: flex; align-items: center; gap: 9px; font-size: .86rem; cursor: pointer; }
+.check input { width: 17px; height: 17px; accent-color: var(--ink); margin: 0; }
+.set-msg { font-size: .78rem; color: var(--bad); min-height: 1em; margin: 0; }
+
+/* score */
+.score { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, .7fr); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+.sc { padding: 8px 10px; border-left: 1px solid var(--line); min-width: 0; }
+.sc:first-child { border-left: 0; }
+.sc span { display: block; font-size: .64rem; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sc b { display: block; font-family: var(--f-mono); font-weight: 600; font-size: 1.02rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* card */
+.card { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 16px 14px; overflow: hidden; }
+.tbar { position: absolute; left: 0; right: 0; top: 0; height: 3px; background: transparent; }
+.tbar i { display: block; height: 100%; background: var(--amber); transform-origin: left center; transform: scaleX(1); }
+.q-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 12px; }
+.tag { font-size: .72rem; text-transform: uppercase; letter-spacing: .09em; font-weight: 700; color: var(--muted); min-width: 0; }
+.tag em { font-style: normal; color: var(--ink); }
+.qtime { font-family: var(--f-mono); font-size: .8rem; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); gap: 10px 14px; }
+.fld { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.fld .fl { font-size: .68rem; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); font-weight: 600; }
+.fld .fv { font-family: var(--f-mono); font-size: 1.08rem; font-weight: 600; font-variant-numeric: tabular-nums; overflow-wrap: break-word; }
+.fld.wide { grid-column: 1 / -1; }
+.fv.quote { white-space: nowrap; font-size: clamp(1.1rem, 5.6vw, 1.45rem); letter-spacing: -.01em; }
+.fv .bid { color: var(--bid); }
+.fv .ofr { color: var(--offer); }
+.fv .sl { color: var(--muted); padding: 0 .3em; font-weight: 400; }
+.fv.neg { color: var(--offer); }
+.fv.pos { color: var(--good); }
+.fv.txt { font-family: var(--f-body); font-size: 1.05rem; }
+.perf { border-top: 2px dashed var(--line-strong); margin: 14px -16px 12px; position: relative; }
+.perf::before, .perf::after { content: ""; position: absolute; top: -9px; width: 16px; height: 16px; border-radius: 50%; background: var(--bg); border: 1px solid var(--line); }
+.perf::before { left: -9px; }
+.perf::after { right: -9px; }
+.prompt { font-size: 1.14rem; font-weight: 600; margin: 0 0 10px; text-wrap: balance; }
+form.ansf { display: flex; gap: 8px; }
+.ans { position: relative; flex: 1; min-width: 0; }
+.ans input { width: 100%; height: 54px; border: 1.5px solid var(--line-strong); border-radius: 9px; background: var(--surface-2); color: var(--ink); font-family: var(--f-mono); font-size: 1.3rem; padding: 0 64px 0 14px; font-variant-numeric: tabular-nums; }
+.ans input::placeholder { color: var(--muted); opacity: .55; }
+.ans input:focus { outline: none; border-color: var(--ink); box-shadow: 0 0 0 3px var(--amber-soft); }
+.unit { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-family: var(--f-mono); font-size: .8rem; color: var(--muted); pointer-events: none; }
+.card.is-ok .ans input { border-color: var(--good); background: var(--good-bg); }
+.card.is-bad .ans input { border-color: var(--bad); background: var(--bad-bg); }
+.btn { border: 0; border-radius: 9px; height: 54px; padding: 0 18px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.btn.primary { background: var(--ink); color: var(--on-ink); }
+.btn.primary:active { transform: translateY(1px); }
+.btn.small { height: 40px; padding: 0 14px; font-size: .88rem; }
+.btn.ghost { background: transparent; border: 1px solid var(--line-strong); }
+.under { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 8px; min-height: 22px; }
+.hint { font-size: .76rem; color: var(--muted); }
+.hint.warn { color: var(--bad); font-weight: 600; }
+.link { background: none; border: 0; padding: 2px 0; color: var(--muted); font-size: .8rem; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; white-space: nowrap; }
+
+/* feedback */
+.fb { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+.verdict { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.verdict strong { font-family: var(--f-display); font-weight: 800; font-size: 1.7rem; text-transform: uppercase; letter-spacing: .02em; line-height: 1; }
+.verdict.ok strong { color: var(--good); }
+.verdict.bad strong { color: var(--bad); }
+.verdict .mono { font-size: .82rem; color: var(--muted); }
+.cmp { display: grid; grid-template-columns: auto 1fr; gap: 3px 12px; font-size: .88rem; }
+.cmp dt { color: var(--muted); }
+.cmp dd { margin: 0; font-family: var(--f-mono); font-variant-numeric: tabular-nums; overflow-wrap: break-word; }
+.how { font-size: .86rem; background: var(--surface-2); border-radius: 8px; padding: 9px 11px; font-family: var(--f-mono); font-variant-numeric: tabular-nums; line-height: 1.6; overflow-wrap: break-word; }
+.how b { color: var(--ink); }
+.how .tip { display: block; font-family: var(--f-body); color: var(--muted); font-size: .8rem; margin-top: 3px; }
+.fb-actions { display: flex; justify-content: flex-end; }
+@media (prefers-reduced-motion: no-preference) {
+  .verdict strong { animation: pop .18s ease-out; }
+  @keyframes pop { from { transform: scale(.92); opacity: .4; } to { transform: none; opacity: 1; } }
+}
+
+/* intro / summary */
+.eyebrow { font-size: .72rem; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); font-weight: 700; margin: 0 0 6px; }
+.big-h { font-family: var(--f-display); font-weight: 800; font-size: 2.4rem; line-height: 1; text-transform: uppercase; margin: 0 0 8px; }
+.view p { margin: 0 0 14px; max-width: 46ch; }
+.sum-big { font-family: var(--f-mono); font-weight: 600; font-size: 2.4rem; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.sum-meta { color: var(--muted); margin: 4px 0 12px; }
+
+/* keypad */
+.pad { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; user-select: none; -webkit-user-select: none; }
+.pad button { height: 50px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); font-family: var(--f-mono); font-size: 1.2rem; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.pad button:active { background: var(--surface-2); }
+.pad button.u { color: var(--muted); font-size: 1.05rem; }
+.pad button.enter { grid-column: span 3; background: var(--ink); color: var(--on-ink); border-color: var(--ink); font-family: var(--f-body); font-weight: 600; font-size: 1rem; }
+
+/* side panels */
+.panel h2 { font-family: var(--f-display); font-weight: 800; font-size: 1.45rem; text-transform: uppercase; letter-spacing: .02em; margin: 0 0 8px; line-height: 1; }
+.panel h3 { font-size: .72rem; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); font-weight: 700; margin: 16px 0 6px; }
+.panel { border-top: 2px solid var(--ink); padding-top: 10px; }
+.note { font-size: .8rem; color: var(--muted); margin: 0 0 8px; }
+.tw { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: .84rem; }
+th { text-align: right; font-size: .66rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; padding: 4px 6px; border-bottom: 1px solid var(--line-strong); white-space: nowrap; }
+td { text-align: right; padding: 6px 6px; border-bottom: 1px solid var(--line); font-family: var(--f-mono); font-variant-numeric: tabular-nums; font-size: .78rem; white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; padding-left: 0; }
+td:first-child { font-family: var(--f-body); font-size: .84rem; white-space: normal; }
+th:last-child, td:last-child { padding-right: 0; }
+tr.tot td { font-weight: 600; border-bottom: 0; }
+td .live { color: var(--amber); font-family: var(--f-body); font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; margin-left: 4px; }
+.empty { color: var(--muted); font-size: .84rem; padding: 6px 0; margin: 0; }
+.acc-hi { color: var(--good); }
+.acc-lo { color: var(--bad); }
+.reset { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+.reset span { font-size: .82rem; }
+.rules dl { margin: 0; display: grid; grid-template-columns: 1fr; gap: 0; }
+.rules .r { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1px; padding: 7px 0; border-bottom: 1px solid var(--line); }
+.rules dt { font-size: .8rem; color: var(--muted); }
+.rules dd { margin: 0; font-family: var(--f-mono); font-size: .8rem; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+@media (min-width: 520px) {
+  .rules .r { grid-template-columns: minmax(0, 11rem) minmax(0, 1fr); gap: 12px; align-items: baseline; }
+}
+@media (max-width: 420px) {
+  .brand h1 { font-size: 1.8rem; }
+  .btn { padding: 0 14px; }
+  .fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fld:last-child:nth-child(odd) { grid-column: 1 / -1; }
+  .sc { padding: 7px 8px; }
+  .sc b { font-size: .92rem; }
+}
+</style>
+
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <h1>Spanno<span>metro</span></h1>
+      <p>Mental math per il market making di opzioni</p>
+    </div>
+    <div class="pill" id="modePill">Libera</div>
+  </header>
+
+  <main class="grid">
+    <section class="drill" aria-label="Esercizio">
+      <details class="settings" id="settings">
+        <summary><span class="sum-l">Impostazioni</span><span class="sum-v" id="setSummary"></span></summary>
+        <div class="set-body">
+          <div>
+            <p class="set-h">I tuoi esercizi</p>
+            <div class="chips" id="chipsCore"></div>
+            <p class="set-h">Esercizi aggiuntivi</p>
+            <div class="chips" id="chipsExtra"></div>
+            <p class="set-msg" id="setMsg"></p>
+          </div>
+          <div class="set-row"><span>Modalità</span>
+            <div class="seg" id="segMode">
+              <button type="button" data-v="free">Libera</button><button type="button" data-v="n20">20 domande</button><button type="button" data-v="t180">3 minuti</button>
+            </div>
+          </div>
+          <div class="set-row"><span>Tolleranza</span>
+            <div class="seg" id="segTol">
+              <button type="button" data-v="0.05">±5%</button><button type="button" data-v="0.1">±10%</button><button type="button" data-v="0.2">±20%</button>
+            </div>
+          </div>
+          <div class="set-row"><span>Livello numeri</span>
+            <div class="seg" id="segLevel">
+              <button type="button" data-v="base">Base</button><button type="button" data-v="hard">Avanzato</button>
+            </div>
+          </div>
+          <label class="check" for="optAuto"><input type="checkbox" id="optAuto"> Domanda successiva automatica se giusta</label>
+          <label class="check" for="optPad"><input type="checkbox" id="optPad"> Tastierino a schermo</label>
+        </div>
+      </details>
+
+      <div class="score" id="score">
+        <div class="sc"><span>Giuste</span><b id="scOk">0/0</b></div>
+        <div class="sc"><span>Precisione</span><b id="scAcc">–</b></div>
+        <div class="sc"><span>Tempo medio</span><b id="scAvg">–</b></div>
+        <div class="sc"><span>Serie</span><b id="scStreak">0</b></div>
+      </div>
+
+      <article class="card" id="card">
+        <div class="tbar" id="tbar" hidden><i id="tbarFill"></i></div>
+
+        <div id="qView" class="view">
+          <div class="q-head"><span class="tag" id="qTag"></span><span class="qtime" id="qTime">0.0 s</span></div>
+          <div class="fields" id="qFields"></div>
+          <div class="perf" aria-hidden="true"></div>
+          <p class="prompt" id="qPrompt"></p>
+          <form class="ansf" id="ansForm" autocomplete="off" novalidate>
+            <div class="ans">
+              <input id="ans" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="go" aria-label="Risposta">
+              <span class="unit" id="qUnit">€</span>
+            </div>
+            <button type="submit" class="btn primary" id="btnGo">Invia</button>
+          </form>
+          <div class="under"><span class="hint" id="hint">Formati: 5.2k · 6.3m · 1.1bn · 240/260 · 2.4%</span><button type="button" class="link" id="btnSkip">Salta</button></div>
+          <div class="fb" id="fb" hidden></div>
+        </div>
+
+        <div id="introView" class="view" hidden>
+          <p class="eyebrow" id="introEyebrow">Sprint</p>
+          <h2 class="big-h" id="introTitle">20 domande</h2>
+          <p id="introText"></p>
+          <button type="button" class="btn primary" id="btnStart">Inizia</button>
+        </div>
+
+        <div id="sumView" class="view" hidden>
+          <p class="eyebrow" id="sumEyebrow">Sessione conclusa</p>
+          <div class="sum-big" id="sumScore">0/0</div>
+          <div class="sum-meta" id="sumMeta"></div>
+          <div class="tw" id="sumTable"></div>
+          <div style="margin-top:14px"><button type="button" class="btn primary" id="btnAgain">Nuova sessione</button></div>
+        </div>
+      </article>
+
+      <div class="pad" id="pad" hidden>
+        <button type="button" data-k="7">7</button><button type="button" data-k="8">8</button><button type="button" data-k="9">9</button><button type="button" data-k="back" class="u" aria-label="Cancella">⌫</button>
+        <button type="button" data-k="4">4</button><button type="button" data-k="5">5</button><button type="button" data-k="6">6</button><button type="button" data-k="k" class="u">k</button>
+        <button type="button" data-k="1">1</button><button type="button" data-k="2">2</button><button type="button" data-k="3">3</button><button type="button" data-k="m" class="u">m</button>
+        <button type="button" data-k="0">0</button><button type="button" data-k=".">.</button><button type="button" data-k="-" class="u" aria-label="Meno">−</button><button type="button" data-k="/" class="u">/</button>
+        <button type="button" data-k="%" class="u">%</button><button type="button" data-k="enter" class="enter" id="padEnter">Invia</button>
+      </div>
+    </section>
+
+    <aside class="side">
+      <section class="panel" aria-label="Questa sessione">
+        <h2>Questa sessione</h2>
+        <div class="tw" id="sessTable"></div>
+      </section>
+
+      <section class="panel" aria-label="Storico">
+        <h2>Storico</h2>
+        <p class="note" id="storeNote">Caricamento dello storico…</p>
+        <div class="tw" id="allTable"></div>
+        <h3>Ultime sessioni</h3>
+        <div class="tw" id="histTable"></div>
+        <div class="reset" id="resetBox">
+          <button type="button" class="link" id="btnReset">Azzera storico</button>
+        </div>
+      </section>
+
+      <section class="panel rules" aria-label="Regole rapide">
+        <h2>Regole rapide</h2>
+        <dl>
+          <div class="r"><dt>Basis point</dt><dd>1 bp = 0.01% · 1 bp su 1m = 100 €</dd></div>
+          <div class="r"><dt>Nominale</dt><dd>size × lot × prezzo</dd></div>
+          <div class="r"><dt>Spread in bps</dt><dd>(offer − bid) / ref × 10 000</dd></div>
+          <div class="r"><dt>Bid / offer in bps</dt><dd>prezzo opzione / spot × 10 000</dd></div>
+          <div class="r"><dt>PnL</dt><dd>€ = nominale × bps / 10 000</dd></div>
+          <div class="r"><dt>Delta hedge</dt><dd>azioni = − size × lot × Δ</dd></div>
+          <div class="r"><dt>Gamma PnL</dt><dd>½ × Γ(1%) × move² / 100</dd></div>
+          <div class="r"><dt>Breakeven gamma/theta</dt><dd>move = √(200 × θ / Γ)</dd></div>
+          <div class="r"><dt>Call o put ATM</dt><dd>≈ 0.4 × σ × √T × S</dd></div>
+          <div class="r"><dt>Straddle ATM</dt><dd>≈ 0.8 × σ × √T × S</dd></div>
+          <div class="r"><dt>Move 1σ</dt><dd>giorno ≈ σ / 16 · settimana ≈ σ / 7.2</dd></div>
+          <div class="r"><dt>√T</dt><dd>1w 0.14 · 1m 0.29 · 3m 0.5 · 6m 0.71 · 1y 1 · 2y 1.41</dd></div>
+          <div class="r"><dt>Formati risposta</dt><dd>5.2k · 6.3m · 1.1bn · −9.6k · 240/260 · 2.4%</dd></div>
+        </dl>
+      </section>
+    </aside>
+  </main>
+</div>
+
+<script>
+(function () {
+'use strict';
+var NB = ' ', MINUS = '−';
+
+/* ---------- numeric helpers ---------- */
+function rnd(a, b) { return a + Math.random() * (b - a); }
+function rint(a, b) { return Math.floor(rnd(a, b + 1)); }
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function chance(p) { return Math.random() < p; }
+function logU(a, b) { return Math.exp(rnd(Math.log(a), Math.log(b))); }
+function clean(x) { return Number(x.toPrecision(12)); }
+function roundTo(x, s) { return clean(Math.round(x / s) * s); }
+function sigRound(x, n) { if (!x) return 0; var p = Math.pow(10, n - 1 - Math.floor(Math.log10(Math.abs(x)))); return clean(Math.round(x * p) / p); }
+function stepDec(step) { return Math.max(0, -Math.round(Math.log10(step))); }
+function sgn() { return chance(0.5) ? 1 : -1; }
+
+/* ---------- formatting ---------- */
+function group(i) { return i.replace(/\B(?=(\d{3})+(?!\d))/g, NB); }
+function joinNum(neg, s) { var parts = s.split('.'); return (neg ? MINUS : '') + group(parts[0]) + (parts[1] ? '.' + parts[1] : ''); }
+function trimZ(s) { return s.indexOf('.') >= 0 ? s.replace(/0+$/, '').replace(/\.$/, '') : s; }
+function fmtFixed(x, dec) { return joinNum(x < 0 && Math.abs(x).toFixed(dec) != 0, Math.abs(x).toFixed(dec)); }
+function fmtAuto(x, maxDec) { if (maxDec == null) maxDec = 4; var s = trimZ(Math.abs(clean(x)).toFixed(maxDec)); return joinNum(x < 0 && +s !== 0, s); }
+function sig3raw(a) { a = Math.abs(a); if (a === 0) return '0'; var d = Math.min(6, Math.max(0, 2 - Math.floor(Math.log10(a)))); return trimZ(a.toFixed(d)); }
+function sig3(x) { return joinNum(x < 0, sig3raw(x)); }
+function fmtShort(x) {
+  var a = Math.abs(x), out = null, U = [[1e9, 'bn'], [1e6, 'm'], [1e3, 'k']];
+  for (var j = 0; j < U.length; j++) { if (a >= U[j][0] * 0.9995) { out = joinNum(false, sig3raw(a / U[j][0])) + U[j][1]; break; } }
+  if (out === null) out = joinNum(false, sig3raw(a));
+  return (x < 0 ? MINUS : '') + out;
+}
+function plus(x, s) { return (x > 0 ? '+' : '') + s; }
+function fmtVal(x, unit) {
+  if (unit === '€') return fmtShort(x) + ' €';
+  if (unit === 'az') return fmtShort(x) + ' az.';
+  if (unit === 'bps') return sig3(x) + ' bps';
+  if (unit === '%') return sig3(x) + '%';
+  return String(x);
+}
+function fmtPct(x) { var sg = x > 0 ? '+' : x < 0 ? MINUS : '±'; if (Math.abs(x) >= 10) return sg + '999%+'; return sg + Math.abs(x * 100).toFixed(1) + '%'; }
+function fmtSec(ms) { return (ms / 1000).toFixed(1) + ' s'; }
+
+/* ---------- parsing answers ---------- */
+var MULT = { '': 1, k: 1e3, m: 1e6, mm: 1e6, mln: 1e6, mio: 1e6, b: 1e9, bn: 1e9, mld: 1e9 };
+function toNumber(t) {
+  var hasDot = t.indexOf('.') >= 0, hasCom = t.indexOf(',') >= 0;
+  if (hasDot && hasCom) {
+    if (t.lastIndexOf(',') > t.lastIndexOf('.')) t = t.replace(/\./g, '').replace(',', '.');
+    else t = t.replace(/,/g, '');
+  } else if (hasCom) {
+    if (/^\d{1,3}(,\d{3})+$/.test(t)) t = t.replace(/,/g, '');
+    else if ((t.match(/,/g) || []).length === 1) t = t.replace(',', '.');
+    else return NaN;
+  } else if ((t.match(/\./g) || []).length > 1) {
+    if (/^\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, '');
+    else return NaN;
+  }
+  if (!/^(\d+\.?\d*|\.\d+)$/.test(t)) return NaN;
+  return parseFloat(t);
+}
+function parseOne(raw, unit) {
+  var s = String(raw).toLowerCase().replace(/[\s  €']/g, '').replace(/[−–—]/g, '-');
+  s = s.replace(/(azioni|az\.?|euro|eur)$/, '');
+  if (!s) return NaN;
+  var sign = 1;
+  if (s[0] === '+') s = s.slice(1); else if (s[0] === '-') { sign = -1; s = s.slice(1); }
+  var m = s.match(/^([0-9.,]+)([a-z%]*)\.?$/);
+  if (!m) return NaN;
+  var n = toNumber(m[1]);
+  if (isNaN(n)) return NaN;
+  var suf = m[2], mult = 1;
+  if (suf === '%') { if (unit === 'bps') mult = 100; else if (unit !== '%') return NaN; }
+  else if (suf === 'bp' || suf === 'bps') { if (unit === '%') mult = 0.01; else if (unit !== 'bps') return NaN; }
+  else if (suf === 'az') { if (unit !== 'az') return NaN; }
+  else if (suf === 'vol' || suf === 'v' || suf === 'pt') { if (unit !== '%') return NaN; }
+  else if (Object.prototype.hasOwnProperty.call(MULT, suf)) mult = MULT[suf];
+  else return NaN;
+  return sign * n * mult;
+}
+function parseAnswer(raw, q) {
+  raw = String(raw || '').trim();
+  if (!raw) return null;
+  if (q.pair) {
+    var parts = raw.split(/[\/;|]/).map(function (t) { return t.trim(); }).filter(Boolean);
+    if (parts.length === 1) {
+      var mm = raw.replace(/\s/g, '').match(/^([0-9][0-9.,]*[a-z%]*)-([0-9][0-9.,]*[a-z%]*)$/i);
+      if (mm) parts = [mm[1], mm[2]];
+    }
+    if (parts.length !== 2) return null;
+    var unitOf = function (t) { return /%$/.test(t) ? '%' : (/bps?$/i.test(t) ? 'bp' : ''); };
+    var a = parts[0], b = parts[1], ua = unitOf(a), ub = unitOf(b);
+    if (ua && !ub) b += ua;
+    if (ub && !ua) a += ub;
+    var x = parseOne(a, q.unit), y = parseOne(b, q.unit);
+    return (isNaN(x) || isNaN(y)) ? null : [x, y];
+  }
+  var v = parseOne(raw, q.unit);
+  return isNaN(v) ? null : v;
+}
+function grade(ans, q, tol) {
+  function one(a, e) { return { err: (a - e) / Math.abs(e), ok: Math.abs(a - e) <= tol * Math.abs(e) * (1 + 1e-9), signBad: a * e < 0 }; }
+  if (q.pair) { var r1 = one(ans[0], q.expected[0]), r2 = one(ans[1], q.expected[1]); return { ok: r1.ok && r2.ok, parts: [r1, r2] }; }
+  var r = one(ans, q.expected);
+  return { ok: r.ok, parts: [r] };
+}
+
+/* ---------- market data generators ---------- */
+/* Lot size: azioni 10, 50, 100, 500, 1000, 5000 (più grandi sui titoli a basso prezzo); indici 1, 2.5, 5, 10, 50 */
+function stockLot(S) {
+  if (S < 1) return pick([5000, 5000, 1000, 1000, 500]);
+  if (S < 5) return pick([1000, 1000, 500, 5000, 100]);
+  if (S < 30) return pick([100, 100, 500, 500, 1000, 50]);
+  if (S < 150) return pick([100, 100, 100, 50, 10, 500]);
+  return pick([10, 50, 50, 100, 100]);
+}
+function genUnd(hard, kind) {
+  kind = kind || (chance(0.78) ? 'stock' : 'index');
+  var S, str, lot;
+  if (kind === 'stock') {
+    /* prezzi da titolo: 0.854, 4.215, 45.5, 182.3 … */
+    S = logU(0.3, 300);
+    var d = S < 1 ? (hard ? 4 : 3) : S < 10 ? (hard ? 3 : 2) : S < 100 ? (hard ? 2 : 1) : (hard ? 2 : (chance(0.5) ? 1 : 0));
+    S = roundTo(S, Math.pow(10, -d));
+    str = hard ? fmtFixed(S, d) : fmtAuto(S, d);
+    lot = stockLot(S);
+  } else {
+    S = logU(3500, 45000);
+    S = hard ? Math.round(S) : roundTo(S, S > 10000 ? 500 : 100);
+    str = fmtFixed(S, 0);
+    lot = pick([1, 2.5, 5, 10, 50]);
+  }
+  return { kind: kind, S: S, str: str, lot: lot };
+}
+function genNotional(hard) {
+  if (hard && chance(0.5)) {
+    var u = genUnd(true, 'stock');
+    var size = Math.max(2, Math.round(logU(5, 2500)));
+    var N = size * u.lot * u.S;
+    return { N: N, fields: [{ l: 'Size', v: fmtAuto(size) + ' lotti' }, { l: 'Lot size', v: fmtAuto(u.lot) }, { l: 'Ref price', v: u.str }],
+      how: fmtAuto(size) + ' × ' + fmtAuto(u.lot) + ' × ' + u.str + ' = ' + fmtShort(N) + ' di nominale<br>' };
+  }
+  var N2 = hard ? sigRound(logU(2e5, 5e7), 4) : sigRound(logU(2e5, 5e7), 2);
+  return { N: N2, fields: [{ l: 'Nominale', v: (hard ? fmtFixed(N2, 0) : fmtShort(N2)) + ' €' }], how: '' };
+}
+function quote(bidStr, offerStr) { return '<span class="bid">' + bidStr + '</span><span class="sl">/</span><span class="ofr">' + offerStr + '</span>'; }
+function stockSize(hard) {
+  return hard ? Math.max(2, Math.round(logU(3, 3000))) : pick([5, 10, 20, 25, 30, 40, 50, 60, 75, 80, 100, 120, 150, 200, 250, 300, 400, 500, 600, 750, 800, 1000, 1200, 1500, 2000]);
+}
+
+/* 1) Nominale */
+function genNom(hard) {
+  var u = genUnd(hard);
+  var size = u.kind === 'stock' ? stockSize(hard)
+    : (hard ? Math.max(1, Math.round(logU(1, 300))) : pick([1, 2, 5, 10, 15, 20, 25, 30, 40, 50, 75, 100, 150, 200, 250]));
+  var qty = size * u.lot, N = qty * u.S;
+  return {
+    tag: u.kind === 'stock' ? 'single stock' : 'indice',
+    fields: [{ l: 'Size', v: fmtAuto(size) + ' lotti' }, { l: 'Lot size', v: fmtAuto(u.lot) }, { l: 'Ref price', v: u.str }],
+    prompt: 'Nominale in €?', unit: '€', expected: N, ph: 'es. 1.4m',
+    how: fmtAuto(size) + ' × ' + fmtAuto(u.lot) + ' = ' + fmtAuto(qty) + (u.kind === 'stock' ? ' azioni' : ' × indice') +
+      '<br>' + fmtAuto(qty) + ' × ' + u.str + ' = <b>' + fmtShort(N) + ' €</b>'
+  };
+}
+
+/* 2) Spread (larghezza) → bps: spot oppure opzione */
+function genSpread(hard) { return chance(0.5) ? genBOspot(hard) : genBOopt(hard, 'width'); }
+/* 3) Bid / offer dell'opzione → bps dello spot */
+function genBidOffer(hard) { return genBOopt(hard, 'levels'); }
+function genBOspot(hard) {
+  var u = genUnd(hard);
+  var tick = Math.pow(10, Math.floor(Math.log10(u.S)) - 3), td = stepDec(tick);
+  var bps = hard ? rnd(1.5, 40) : pick([2, 3, 4, 5, 8, 10, 12, 15, 20, 25, 30]);
+  var w = Math.max(tick, roundTo(u.S * bps / 1e4, tick));
+  var bid = roundTo(u.S - w / 2, tick), offer = clean(bid + w);
+  var exp = w / u.S * 1e4;
+  return {
+    tag: 'spot',
+    fields: [{ l: 'Ref price', v: u.str }, { l: 'Bid / offer', v: quote(fmtFixed(bid, td), fmtFixed(offer, td)), cls: 'quote', wide: true }],
+    prompt: 'Spread bid-offer in bps (larghezza)?', unit: 'bps', expected: exp, ph: 'es. 12',
+    how: fmtFixed(offer, td) + ' − ' + fmtFixed(bid, td) + ' = ' + fmtFixed(w, td) +
+      '<br>' + fmtFixed(w, td) + ' / ' + u.str + ' × 10 000 = <b>' + sig3(exp) + ' bps</b>' +
+      '<span class="tip">1 bp di ' + u.str + ' vale ' + fmtAuto(u.S / 1e4, 6) + '</span>'
+  };
+}
+function genBOopt(hard, kind) {
+  var u = genUnd(hard);
+  var p = hard ? logU(0.005, 0.20) : pick([0.005, 0.0075, 0.01, 0.015, 0.02, 0.025, 0.03, 0.04, 0.05, 0.06, 0.08, 0.1, 0.12, 0.15, 0.2]) * rnd(0.92, 1.08);
+  var m = u.S * p;
+  var tick = Math.max(1e-4, Math.pow(10, Math.floor(Math.log10(m)) - 2)), td = stepDec(tick);
+  var frac = rnd(0.04, 0.12) + (p < 0.01 ? 0.06 : 0);
+  var w = Math.max(2 * tick, roundTo(m * frac, tick));
+  var bid = Math.max(tick, roundTo(m - w / 2, tick)), offer = clean(bid + w);
+  var bb = bid / u.S * 1e4, ob = offer / u.S * 1e4, wb = w / u.S * 1e4;
+  var base = {
+    tag: 'opzione',
+    fields: [{ l: 'Spot ref', v: u.str }, { l: 'Opzione bid / offer', v: quote(fmtFixed(bid, td), fmtFixed(offer, td)), cls: 'quote', wide: true }]
+  };
+  var pct1 = '1% dello spot = ' + fmtAuto(u.S / 100, 4);
+  if (kind === 'levels') {
+    base.prompt = 'Bid / offer dell’opzione in bps dello spot?';
+    base.unit = 'bps'; base.pair = true; base.expected = [bb, ob]; base.ph = 'es. 240/260';
+    base.how = fmtFixed(bid, td) + ' / ' + u.str + ' × 10 000 = <b>' + sig3(bb) + '</b><br>' +
+      fmtFixed(offer, td) + ' / ' + u.str + ' × 10 000 = <b>' + sig3(ob) + '</b><span class="tip">' + pct1 + ' → 100 bps</span>';
+  } else {
+    base.prompt = 'Spread dell’opzione in bps dello spot (larghezza)?';
+    base.unit = 'bps'; base.expected = wb; base.ph = 'es. 15';
+    base.how = fmtFixed(offer, td) + ' − ' + fmtFixed(bid, td) + ' = ' + fmtFixed(w, td) + '<br>' +
+      fmtFixed(w, td) + ' / ' + u.str + ' × 10 000 = <b>' + sig3(wb) + ' bps</b><span class="tip">' + pct1 + ' → 100 bps</span>';
+  }
+  return base;
+}
+
+/* 4) PnL bps ↔ € */
+function genPnl(hard) {
+  var nt = genNotional(hard);
+  var bps = hard ? clean(Math.round(rnd(0.3, 60) * 10) / 10) : pick([0.5, 1, 1.5, 2, 2.5, 3, 4, 5, 6, 7.5, 8, 10, 12, 15, 20, 25, 30, 40, 50]);
+  if (chance(0.35)) bps = -bps;
+  var onebp = nt.N / 1e4;
+  if (chance(0.5)) {
+    var pnl = nt.N * bps / 1e4;
+    return {
+      tag: 'bps → €',
+      fields: nt.fields.concat([{ l: 'PnL', v: plus(bps, fmtAuto(bps)) + ' bps', cls: bps < 0 ? 'neg' : 'pos' }]),
+      prompt: 'PnL in €?', unit: '€', expected: pnl, ph: 'es. 4.2k',
+      how: nt.how + '1 bp su ' + fmtShort(nt.N) + ' = ' + fmtShort(onebp) + ' €<br>' + fmtShort(onebp) + ' × ' + fmtAuto(bps) + ' = <b>' + fmtShort(pnl) + ' €</b>'
+    };
+  }
+  var raw = nt.N * bps / 1e4;
+  var shown = hard ? Math.round(raw) : sigRound(raw, 2);
+  if (!shown) shown = raw > 0 ? 1 : -1;
+  var exp = shown / nt.N * 1e4;
+  return {
+    tag: '€ → bps',
+    fields: nt.fields.concat([{ l: 'PnL', v: plus(shown, hard ? fmtFixed(shown, 0) : fmtShort(shown)) + ' €', cls: shown < 0 ? 'neg' : 'pos' }]),
+    prompt: 'PnL in bps?', unit: 'bps', expected: exp, ph: 'es. 12',
+    how: nt.how + '1 bp su ' + fmtShort(nt.N) + ' = ' + fmtShort(onebp) + ' €<br>' + fmtShort(shown) + ' / ' + fmtShort(onebp) + ' = <b>' + sig3(exp) + ' bps</b>'
+  };
+}
+
+/* 4) Premio */
+function genPrem(hard) {
+  var v = Math.random(), nt, pct;
+  if (v < 0.4) {
+    nt = genNotional(hard);
+    pct = hard ? clean(Math.round(logU(0.3, 15) * 100) / 100) : pick([0.25, 0.5, 0.75, 1, 1.2, 1.5, 2, 2.5, 3, 3.5, 4, 5, 6, 7.5, 8, 10, 12]);
+    var prem = nt.N * pct / 100;
+    return {
+      tag: '% → €',
+      fields: nt.fields.concat([{ l: 'Prezzo opzione', v: fmtAuto(pct) + '%' }]),
+      prompt: 'Premio in €?', unit: '€', expected: prem, ph: 'es. 85k',
+      how: nt.how + '1% di ' + fmtShort(nt.N) + ' = ' + fmtShort(nt.N / 100) + '<br>' + fmtShort(nt.N / 100) + ' × ' + fmtAuto(pct) + ' = <b>' + fmtShort(prem) + ' €</b>'
+    };
+  }
+  if (v < 0.7) {
+    nt = genNotional(hard);
+    var raw = nt.N * logU(0.3, 15) / 100;
+    var shown = hard ? Math.round(raw) : sigRound(raw, 2);
+    var exp = shown / nt.N * 100;
+    return {
+      tag: '€ → %',
+      fields: nt.fields.concat([{ l: 'Premio', v: (hard ? fmtFixed(shown, 0) : fmtShort(shown)) + ' €' }]),
+      prompt: 'Prezzo dell’opzione in % del nominale?', unit: '%', expected: exp, ph: 'es. 2.4%',
+      how: nt.how + fmtShort(shown) + ' / ' + fmtShort(nt.N) + ' × 100 = <b>' + sig3(exp) + '%</b><span class="tip">equivale a ' + sig3(exp * 100) + ' bps</span>'
+    };
+  }
+  var u = genUnd(hard, 'stock');
+  var size = hard ? Math.max(2, Math.round(logU(5, 2000))) : pick([10, 20, 25, 50, 75, 100, 150, 200, 250, 300, 500, 1000]);
+  var px = u.S * logU(0.005, 0.15);
+  var tick = Math.pow(10, Math.floor(Math.log10(px)) - (hard ? 2 : 1));
+  px = Math.max(tick, roundTo(px, tick));
+  var qty = size * u.lot, pr = qty * px;
+  return {
+    tag: 'premio totale',
+    fields: [{ l: 'Size', v: fmtAuto(size) + ' lotti' }, { l: 'Lot size', v: fmtAuto(u.lot) }, { l: 'Prezzo opzione', v: fmtFixed(px, stepDec(tick)) + ' €' }],
+    prompt: 'Premio totale in €?', unit: '€', expected: pr, ph: 'es. 34k',
+    how: fmtAuto(size) + ' × ' + fmtAuto(u.lot) + ' = ' + fmtAuto(qty) + ' opzioni<br>' + fmtAuto(qty) + ' × ' + fmtFixed(px, stepDec(tick)) + ' = <b>' + fmtShort(pr) + ' €</b>'
+  };
+}
+
+/* 5) Delta hedge */
+function genDelta(hard) {
+  var buy = chance(0.5), call = chance(0.5);
+  var u = genUnd(hard, 'stock');
+  var size = hard ? Math.max(2, Math.round(logU(5, 2000))) : pick([10, 20, 25, 40, 50, 80, 100, 150, 200, 250, 300, 400, 500]);
+  var dAbs = hard ? rint(3, 97) : pick([5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 90]);
+  var d = (call ? 1 : -1) * dAbs / 100;
+  var pos = (buy ? 1 : -1) * size * u.lot * d;
+  var trade = (buy ? 'Compri ' : 'Vendi ') + fmtAuto(size) + (call ? ' call' : ' put');
+  var dStr = (d < 0 ? MINUS : '') + dAbs + 'Δ';
+  var step1 = (buy ? '+' : MINUS) + fmtAuto(size) + ' × ' + fmtAuto(u.lot) + ' × ' + fmtAuto(d) + ' = ' + plus(pos, fmtShort(pos)) + ' az. di delta';
+  if (chance(0.6)) {
+    var hedge = -pos;
+    return {
+      tag: 'hedge in azioni',
+      fields: [{ l: 'Trade', v: trade, cls: 'txt' }, { l: 'Delta', v: dStr }, { l: 'Lot size', v: fmtAuto(u.lot) }],
+      prompt: 'Hedge in azioni? (+ compri · − vendi)', unit: 'az', expected: hedge, ph: 'es. −9.6k',
+      how: step1 + '<br>hedge = <b>' + plus(hedge, fmtShort(hedge)) + ' az.</b> (' + (hedge < 0 ? 'vendi' : 'compri') + ')'
+    };
+  }
+  var de = pos * u.S;
+  return {
+    tag: 'delta in €',
+    fields: [{ l: 'Trade', v: trade, cls: 'txt' }, { l: 'Delta', v: dStr }, { l: 'Lot size', v: fmtAuto(u.lot) }, { l: 'Spot', v: u.str }],
+    prompt: 'Delta della posizione in €? (con segno)', unit: '€', expected: de, ph: 'es. 340k',
+    how: step1 + '<br>' + fmtShort(pos) + ' × ' + u.str + ' = <b>' + plus(de, fmtShort(de)) + ' €</b>'
+  };
+}
+
+/* 6) PnL greche */
+function genGreek(hard) {
+  var v = Math.random(), pnl, mv;
+  if (v < 0.3) {
+    var D = sgn() * sigRound(logU(1e5, 2e7), hard ? 3 : 2);
+    mv = sgn() * (hard ? clean(Math.round(rnd(0.1, 3.5) * 100) / 100) : pick([0.1, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.75, 0.8, 1, 1.2, 1.5, 2, 2.5, 3]));
+    pnl = D * mv / 100;
+    return {
+      tag: 'delta',
+      fields: [{ l: 'Delta', v: plus(D, fmtShort(D)) + ' €' }, { l: 'Move spot', v: plus(mv, fmtAuto(mv)) + '%', cls: mv < 0 ? 'neg' : 'pos' }],
+      prompt: 'PnL in €? (con segno)', unit: '€', expected: pnl, ph: 'es. −9.6k',
+      how: fmtShort(D) + ' × ' + fmtAuto(mv) + '% = <b>' + plus(pnl, fmtShort(pnl)) + ' €</b>'
+    };
+  }
+  if (v < 0.55) {
+    var V = sgn() * sigRound(logU(2e3, 3e5), hard ? 3 : 2);
+    var dv = sgn() * (hard ? clean(Math.round(rnd(0.1, 6) * 100) / 100) : pick([0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 2.5, 3, 4, 5]));
+    pnl = V * dv;
+    return {
+      tag: 'vega',
+      fields: [{ l: 'Vega (€ per punto vol)', v: plus(V, fmtShort(V)) + ' €' }, { l: 'Variazione vol', v: plus(dv, fmtAuto(dv)) + ' pt', cls: dv < 0 ? 'neg' : 'pos' }],
+      prompt: 'PnL in €? (con segno)', unit: '€', expected: pnl, ph: 'es. −37.5k',
+      how: fmtShort(V) + ' × ' + fmtAuto(dv) + ' = <b>' + plus(pnl, fmtShort(pnl)) + ' €</b>'
+    };
+  }
+  if (v < 0.8) {
+    var G = (chance(0.6) ? 1 : -1) * sigRound(logU(5e4, 5e6), hard ? 3 : 2);
+    mv = sgn() * (hard ? clean(Math.round(rnd(0.3, 4.5) * 100) / 100) : pick([0.5, 1, 1.5, 2, 2.5, 3, 4]));
+    pnl = 0.5 * G * mv * mv / 100;
+    return {
+      tag: 'gamma',
+      fields: [{ l: 'Gamma (Δ€ per 1%)', v: plus(G, fmtShort(G)) + ' €' }, { l: 'Move spot', v: plus(mv, fmtAuto(mv)) + '%', cls: mv < 0 ? 'neg' : 'pos' }],
+      prompt: 'PnL da gamma in €? (con segno)', unit: '€', expected: pnl, ph: 'es. 12.5k',
+      how: '½ × ' + fmtShort(G) + ' × ' + fmtAuto(Math.abs(mv)) + '² / 100 = <b>' + plus(pnl, fmtShort(pnl)) + ' €</b>' +
+        '<span class="tip">il delta cambia di ' + fmtShort(Math.abs(G * mv)) + ', in media metà durante il move</span>'
+    };
+  }
+  var G2 = sigRound(logU(1e5, 5e6), hard ? 3 : 1);
+  var m = hard ? rnd(0.4, 3.5) : pick([0.5, 1, 1.5, 2, 2.5, 3]);
+  var th = sigRound(0.5 * G2 * m * m / 100, hard ? 3 : 2);
+  var exp = Math.sqrt(200 * th / G2);
+  return {
+    tag: 'breakeven',
+    fields: [{ l: 'Gamma (Δ€ per 1%)', v: '+' + fmtShort(G2) + ' €' }, { l: 'Theta (al giorno)', v: MINUS + fmtShort(th) + ' €', cls: 'neg' }],
+    prompt: 'Move giornaliero di breakeven (%)?', unit: '%', expected: exp, ph: 'es. 1.5%',
+    how: 'θ = ½ × Γ × m² / 100 → m = √(200 × ' + fmtShort(th) + ' / ' + fmtShort(G2) + ')<br>= √' + sig3(200 * th / G2) + ' = <b>' + sig3(exp) + '%</b>'
+  };
+}
+
+/* 7) ATM e vol */
+var TENORS = [
+  { l: '1 settimana', y: 7 / 365 }, { l: '2 settimane', y: 14 / 365 }, { l: '1 mese', y: 1 / 12 }, { l: '2 mesi', y: 2 / 12 },
+  { l: '3 mesi', y: 0.25 }, { l: '6 mesi', y: 0.5 }, { l: '9 mesi', y: 0.75 }, { l: '1 anno', y: 1 }, { l: '18 mesi', y: 1.5 },
+  { l: '2 anni', y: 2 }, { l: '3 anni', y: 3 }, { l: '4 anni', y: 4 }
+];
+var BASE_TENORS = ['1 mese', '3 mesi', '6 mesi', '1 anno', '2 anni', '4 anni'];
+function genAtm(hard) {
+  var v = Math.random();
+  var T = pick(hard ? TENORS : TENORS.filter(function (t) { return BASE_TENORS.indexOf(t.l) >= 0; }));
+  var sT = Math.sqrt(T.y);
+  var vol = hard ? rint(8, 90) : pick([10, 12, 15, 16, 18, 20, 22, 24, 25, 28, 30, 32, 35, 40, 45, 48, 50, 60, 80]);
+  var sTs = '√T = ' + sig3(sT);
+  if (v < 0.3) {
+    var c = 0.4 * vol * sT;
+    return {
+      tag: 'call ATM',
+      fields: [{ l: 'Vol implicita', v: vol + '%' }, { l: 'Scadenza', v: T.l, cls: 'txt' }],
+      prompt: 'Prezzo della call ATM in % dello spot?', unit: '%', expected: c, ph: 'es. 5%',
+      how: '0.4 × ' + vol + '% × ' + sig3(sT) + ' = <b>' + sig3(c) + '%</b><span class="tip">' + sTs + ' per ' + T.l + '</span>'
+    };
+  }
+  if (v < 0.55) {
+    var u = genUnd(hard);
+    var st = 0.8 * vol / 100 * sT * u.S;
+    return {
+      tag: 'straddle ATM',
+      fields: [{ l: 'Spot', v: u.str }, { l: 'Vol implicita', v: vol + '%' }, { l: 'Scadenza', v: T.l, cls: 'txt' }],
+      prompt: 'Prezzo dello straddle ATM in €?', unit: '€', expected: st, ph: 'es. 4.2',
+      how: '0.8 × ' + vol + '% × ' + sig3(sT) + ' = ' + sig3(0.8 * vol * sT) + '% dello spot<br>× ' + u.str + ' = <b>' + fmtShort(st) + ' €</b>'
+    };
+  }
+  if (v < 0.75) {
+    var strad = hard ? clean(Math.round(0.8 * vol * sT * 100) / 100) : sigRound(0.8 * vol * sT, 2);
+    var iv = strad / (0.8 * sT);
+    return {
+      tag: 'vol implicita',
+      fields: [{ l: 'Straddle ATM', v: fmtAuto(strad) + '% dello spot' }, { l: 'Scadenza', v: T.l, cls: 'txt' }],
+      prompt: 'Vol implicita (%)?', unit: '%', expected: iv, ph: 'es. 25',
+      how: 'σ ≈ ' + fmtAuto(strad) + ' / (0.8 × ' + sig3(sT) + ') = <b>' + sig3(iv) + '%</b>'
+    };
+  }
+  var weekly = chance(0.3);
+  var mvv = vol / Math.sqrt(weekly ? 52 : 252);
+  return {
+    tag: 'move 1σ',
+    fields: [{ l: 'Vol implicita', v: vol + '%' }, { l: 'Orizzonte', v: weekly ? '1 settimana' : '1 giorno', cls: 'txt' }],
+    prompt: 'Move atteso a 1σ in %?', unit: '%', expected: mvv, ph: 'es. 1.6%',
+    how: vol + ' / ' + (weekly ? '√52 (≈ 7.2)' : '√252 (≈ 16)') + ' = <b>' + sig3(mvv) + '%</b>'
+  };
+}
+
+var EX = [
+  { id: 'nom', name: 'Nominale', desc: 'size × lot × prezzo', core: true, gen: genNom },
+  { id: 'spr', name: 'Spread → bps', desc: 'larghezza, spot e opzioni', core: true, gen: genSpread },
+  { id: 'bol', name: 'Bid / offer → bps', desc: 'prezzi opzione in bps dello spot', core: true, gen: genBidOffer },
+  { id: 'pnl', name: 'PnL bps ↔ €', desc: 'sul nominale', core: true, gen: genPnl },
+  { id: 'prem', name: 'Premio', desc: '% ↔ € e premio totale', core: false, gen: genPrem },
+  { id: 'delta', name: 'Delta hedge', desc: 'azioni e delta in €', core: false, gen: genDelta },
+  { id: 'greek', name: 'PnL greche', desc: 'delta, vega, gamma, breakeven', core: false, gen: genGreek },
+  { id: 'atm', name: 'ATM e vol', desc: '0.4σ√T, vol implicita, move 1σ', core: false, gen: genAtm }
+];
+var EXMAP = {}; EX.forEach(function (e) { EXMAP[e.id] = e; });
+function makeQuestion(exId, hard) { var q = EXMAP[exId].gen(hard); q.ex = exId; return q; }
+
+globalThis.__SPN = { EX: EX, makeQuestion: makeQuestion, parseAnswer: parseAnswer, grade: grade, fmtVal: fmtVal, fmtShort: fmtShort, parseOne: parseOne };
+if (typeof document === 'undefined') return;
+
+/* ================= UI ================= */
+var $ = function (id) { return document.getElementById(id); };
+var els = {
+  modePill: $('modePill'), settings: $('settings'), setSummary: $('setSummary'), chipsCore: $('chipsCore'), chipsExtra: $('chipsExtra'), setMsg: $('setMsg'),
+  segMode: $('segMode'), segTol: $('segTol'), segLevel: $('segLevel'), optAuto: $('optAuto'), optPad: $('optPad'),
+  scOk: $('scOk'), scAcc: $('scAcc'), scAvg: $('scAvg'), scStreak: $('scStreak'),
+  card: $('card'), tbar: $('tbar'), tbarFill: $('tbarFill'), qView: $('qView'), introView: $('introView'), sumView: $('sumView'),
+  qTag: $('qTag'), qTime: $('qTime'), qFields: $('qFields'), qPrompt: $('qPrompt'), form: $('ansForm'), input: $('ans'), qUnit: $('qUnit'),
+  btnGo: $('btnGo'), hint: $('hint'), btnSkip: $('btnSkip'), fb: $('fb'),
+  introEyebrow: $('introEyebrow'), introTitle: $('introTitle'), introText: $('introText'), btnStart: $('btnStart'),
+  sumEyebrow: $('sumEyebrow'), sumScore: $('sumScore'), sumMeta: $('sumMeta'), sumTable: $('sumTable'), btnAgain: $('btnAgain'),
+  pad: $('pad'), padEnter: $('padEnter'),
+  sessTable: $('sessTable'), allTable: $('allTable'), histTable: $('histTable'), storeNote: $('storeNote'), resetBox: $('resetBox')
+};
+var HINT = 'Formati: 5.2k · 6.3m · 1.1bn · 240/260 · 2.4%';
+var MODES = { free: 'Libera', n20: '20 domande', t180: '3 minuti' };
+var SPRINT_MS = 180000, SPRINT_N = 20;
+
+/* ---------- settings (per-browser convenience) ---------- */
+var SET_KEY = 'spannometro.settings.v1';
+var coarse = false;
+try { coarse = window.matchMedia('(pointer: coarse)').matches; } catch (e) {}
+var settings = { ex: {}, tol: 0.1, hard: false, mode: 'free', auto: true, pad: coarse };
+EX.forEach(function (e) { settings.ex[e.id] = true; });
+try {
+  var savedSet = JSON.parse(localStorage.getItem(SET_KEY) || 'null');
+  if (savedSet && typeof savedSet === 'object') {
+    if (savedSet.ex) EX.forEach(function (e) { if (typeof savedSet.ex[e.id] === 'boolean') settings.ex[e.id] = savedSet.ex[e.id]; });
+    if ([0.05, 0.1, 0.2].indexOf(savedSet.tol) >= 0) settings.tol = savedSet.tol;
+    if (typeof savedSet.hard === 'boolean') settings.hard = savedSet.hard;
+    if (MODES[savedSet.mode]) settings.mode = savedSet.mode;
+    if (typeof savedSet.auto === 'boolean') settings.auto = savedSet.auto;
+    if (typeof savedSet.pad === 'boolean') settings.pad = savedSet.pad;
+  }
+} catch (e) {}
+if (!EX.some(function (e) { return settings.ex[e.id]; })) EX.forEach(function (e) { settings.ex[e.id] = true; });
+function saveSettings() { try { localStorage.setItem(SET_KEY, JSON.stringify(settings)); } catch (e) {} }
+
+/* ---------- state ---------- */
+var st = { session: null, q: null, qStart: 0, answered: false, lastEx: null, autoTimer: null, view: 'q' };
+function newSessionObj() {
+  var ex = {};
+  return { id: 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7), t: Date.now(), last: Date.now(), mode: settings.mode,
+    tol: settings.tol, hard: settings.hard, n: 0, ok: 0, ms: 0, ex: ex, done: false, started: settings.mode === 'free', startedAt: 0, streak: 0, best: 0 };
+}
+function sessionBody(s) {
+  return { id: s.id, t: s.t, last: s.last, mode: s.mode, tol: s.tol, hard: s.hard, n: s.n, ok: s.ok, ms: Math.round(s.ms), ex: JSON.parse(JSON.stringify(s.ex)), best: s.best, done: !!s.done };
+}
+
+/* ---------- history store: account (db) when available, else this browser ---------- */
+var LS_KEY = 'spannometro.history.v1';
+function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+var Store = {
+  kind: 'none', sessions: [], col: null, profile: null, pending: new Map(), saving: false, timer: null,
+  loadLocal: function () {
+    try {
+      var raw = localStorage.getItem(LS_KEY);
+      var d = raw ? JSON.parse(raw) : null;
+      this.sessions = d && Array.isArray(d.sessions) ? d.sessions.filter(function (s) { return s && typeof s.t === 'number'; }) : [];
+      this.kind = 'local';
+    } catch (e) { this.kind = 'none'; this.sessions = []; }
+  },
+  saveLocal: function () {
+    try {
+      var cur = st.session && st.session.n > 0 ? [sessionBody(st.session)] : [];
+      var curId = st.session && st.session.id;
+      var all = cur.concat(this.sessions.filter(function (s) { return s.id !== curId; })).slice(0, 300);
+      localStorage.setItem(LS_KEY, JSON.stringify({ sessions: all }));
+    } catch (e) {}
+  },
+  connect: function () {
+    var self = this;
+    if (!(window.claude && typeof window.claude.use === 'function')) { renderStoreNote(); return; }
+    Promise.all([window.claude.use('db'), window.claude.use('user')]).then(function (r) {
+      var db = r[0], user = r[1];
+      if (!db || !user) return null;
+      return user.id().then(function (uid) {
+        if (!uid) return null;
+        var profile = db.doc('data/users/' + uid + '/profile');
+        var col = profile.collection('sessions');
+        return Promise.all([profile.get(), col.orderBy('t', 'desc').limit(300).get()]).then(function (res) {
+          var p = res[0], snap = res[1];
+          var resetAt = p.exists ? (p.data().resetAt || 0) : 0;
+          self.profile = profile; self.col = col; self.kind = 'db';
+          var curId = st.session && st.session.id;
+          self.sessions = snap.docs.map(function (d) { return d.data(); })
+            .filter(function (s) { return s && typeof s.t === 'number' && s.t >= resetAt && s.id !== curId; });
+          if (st.session && st.session.n > 0) self.queue(st.session, true);
+          return true;
+        });
+      });
+    }).catch(function () { return null; }).then(function () { renderStats(); renderStoreNote(); });
+  },
+  queue: function (s, now) {
+    this.pending.set(s.id, sessionBody(s));
+    clearTimeout(this.timer);
+    var self = this;
+    this.timer = setTimeout(function () { self.flush(); }, now ? 0 : 1500);
+  },
+  flush: function () {
+    var self = this;
+    if (this.kind !== 'db') { this.pending.clear(); this.saveLocal(); return; }
+    if (this.saving) return;
+    this.saving = true;
+    var step = function () {
+      if (!self.pending.size || self.kind !== 'db') { self.saving = false; return; }
+      var first = self.pending.entries().next().value;
+      self.pending.delete(first[0]);
+      var write = function () { return self.col.doc(first[0]).set(first[1]); };
+      write().catch(function (e) {
+        if (e && e.code === 'unavailable') return sleep(700 + Math.random() * 900).then(write);
+        throw e;
+      }).then(step, function () { self.saving = false; self.fallback(); });
+    };
+    step();
+  },
+  fallback: function () { this.kind = 'local'; this.pending.clear(); this.saveLocal(); renderStoreNote(); },
+  archive: function (s) {
+    if (!s || s.n === 0) return;
+    var body = sessionBody(s);
+    this.sessions = [body].concat(this.sessions.filter(function (x) { return x.id !== s.id; }));
+    this.queue(s, true);
+  },
+  reset: function () {
+    this.sessions = [];
+    this.pending.clear();
+    clearTimeout(this.timer);
+    if (this.kind === 'db' && this.profile) { this.profile.set({ resetAt: Date.now() }).catch(function () {}); }
+    try { localStorage.removeItem(LS_KEY); } catch (e) {}
+  }
+};
+function renderStoreNote() {
+  els.storeNote.textContent = Store.kind === 'db' ? 'Salvato nel tuo account: lo ritrovi su ogni dispositivo.'
+    : Store.kind === 'local' ? 'Salvato su questo dispositivo.' : 'In questa vista lo storico non viene salvato.';
+}
+
+/* ---------- settings UI ---------- */
+function renderChips() {
+  [els.chipsCore, els.chipsExtra].forEach(function (c) { c.innerHTML = ''; });
+  EX.forEach(function (e) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'chip'; b.id = 'chip-' + e.id;
+    b.setAttribute('aria-pressed', settings.ex[e.id] ? 'true' : 'false');
+    b.innerHTML = '<b></b><small></small>';
+    b.firstChild.textContent = e.name; b.lastChild.textContent = e.desc;
+    b.addEventListener('click', function () {
+      var on = !settings.ex[e.id];
+      var count = EX.filter(function (x) { return settings.ex[x.id]; }).length;
+      if (!on && count === 1) { els.setMsg.textContent = 'Lascia attivo almeno un esercizio.'; return; }
+      els.setMsg.textContent = '';
+      settings.ex[e.id] = on; saveSettings();
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      renderSummaryLine();
+      if (!on && st.q && st.q.ex === e.id && !st.answered && st.view === 'q') nextQuestion();
+    });
+    (e.core ? els.chipsCore : els.chipsExtra).appendChild(b);
+  });
+}
+function setSeg(seg, val) {
+  Array.prototype.forEach.call(seg.querySelectorAll('button'), function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-v') === String(val) ? 'true' : 'false'); });
+}
+function renderSummaryLine() {
+  var n = EX.filter(function (e) { return settings.ex[e.id]; }).length;
+  els.setSummary.textContent = n + (n === 1 ? ' esercizio' : ' esercizi') + ' · ±' + Math.round(settings.tol * 100) + '% · ' + (settings.hard ? 'avanzato' : 'base') + ' · ' + MODES[settings.mode].toLowerCase();
+}
+function bindSeg(seg, fn) {
+  seg.addEventListener('click', function (ev) { var b = ev.target.closest('button'); if (b) fn(b.getAttribute('data-v')); });
+}
+bindSeg(els.segMode, function (v) {
+  if (!MODES[v]) return;
+  settings.mode = v; saveSettings(); setSeg(els.segMode, v); renderSummaryLine(); startSession();
+});
+bindSeg(els.segTol, function (v) { settings.tol = parseFloat(v); saveSettings(); setSeg(els.segTol, settings.tol); renderSummaryLine(); });
+bindSeg(els.segLevel, function (v) {
+  settings.hard = v === 'hard'; saveSettings(); setSeg(els.segLevel, v); renderSummaryLine();
+  if (st.view === 'q' && !st.answered && st.session.started) nextQuestion();
+});
+els.optAuto.addEventListener('change', function () { settings.auto = els.optAuto.checked; saveSettings(); });
+els.optPad.addEventListener('change', function () { settings.pad = els.optPad.checked; saveSettings(); applyPad(); });
+function applyPad() {
+  els.pad.hidden = !settings.pad || st.view !== 'q';
+  els.input.setAttribute('inputmode', settings.pad ? 'none' : 'text');
+}
+
+/* ---------- session flow ---------- */
+function startSession() {
+  clearTimeout(st.autoTimer);
+  if (st.session) Store.archive(st.session);
+  st.session = newSessionObj();
+  renderScore(); renderStats(); updatePill();
+  if (settings.mode === 'free') { showView('q'); nextQuestion(); }
+  else showIntro();
+}
+function showView(v) {
+  st.view = v;
+  els.qView.hidden = v !== 'q'; els.introView.hidden = v !== 'intro'; els.sumView.hidden = v !== 'sum';
+  els.tbar.hidden = !(st.session && st.session.mode === 't180' && st.session.started && v === 'q');
+  applyPad();
+}
+function showIntro() {
+  var timed = settings.mode === 't180';
+  els.introEyebrow.textContent = 'Sprint';
+  els.introTitle.textContent = timed ? '3 minuti' : '20 domande';
+  els.introText.textContent = timed
+    ? 'Rispondi a quante più domande puoi in 3 minuti. Contano le risposte giuste e il tempo medio.'
+    : 'Rispondi a 20 domande il più in fretta possibile. Alla fine vedi precisione e tempo medio.';
+  showView('intro');
+  els.card.classList.remove('is-ok', 'is-bad');
+  setTimeout(function () { try { els.btnStart.focus({ preventScroll: true }); } catch (e) {} }, 30);
+}
+els.btnStart.addEventListener('click', function () {
+  st.session.started = true; st.session.startedAt = Date.now(); st.session.t = Date.now();
+  showView('q'); nextQuestion(); updatePill();
+});
+els.btnAgain.addEventListener('click', function () { startSession(); });
+
+function pickExercise() {
+  var on = EX.filter(function (e) { return settings.ex[e.id]; }).map(function (e) { return e.id; });
+  if (on.length > 1 && st.lastEx) { var f = on.filter(function (id) { return id !== st.lastEx; }); if (f.length && chance(0.75)) on = f; }
+  return pick(on);
+}
+function nextQuestion() {
+  clearTimeout(st.autoTimer);
+  if (st.session.done) return;
+  var exId = pickExercise();
+  var q = null;
+  for (var i = 0; i < 20 && !q; i++) {
+    try {
+      var cand = makeQuestion(exId, settings.hard);
+      var e = cand.pair ? cand.expected : [cand.expected];
+      if (e.every(function (x) { return isFinite(x) && x !== 0; })) q = cand;
+    } catch (err) {}
+  }
+  if (!q) return;
+  st.q = q; st.lastEx = exId; st.answered = false;
+  els.card.classList.remove('is-ok', 'is-bad');
+  els.qTag.innerHTML = '<em></em> · <span></span>';
+  els.qTag.firstChild.textContent = EXMAP[exId].name; els.qTag.lastChild.textContent = q.tag;
+  els.qFields.innerHTML = q.fields.map(function (f) {
+    return '<div class="fld' + (f.wide ? ' wide' : '') + '"><span class="fl">' + f.l + '</span><span class="fv ' + (f.cls || '') + '">' + f.v + '</span></div>';
+  }).join('');
+  els.qPrompt.textContent = q.prompt;
+  els.qUnit.textContent = q.pair ? 'bps' : (q.unit === 'az' ? 'az.' : q.unit);
+  els.input.value = ''; els.input.readOnly = false; els.input.placeholder = q.ph || '';
+  els.fb.hidden = true; els.fb.innerHTML = '';
+  els.hint.textContent = HINT; els.hint.classList.remove('warn');
+  els.btnGo.textContent = 'Invia'; els.padEnter.textContent = 'Invia';
+  els.btnSkip.hidden = false;
+  st.qStart = performance.now();
+  els.qTime.textContent = '0.0 s';
+  if (!settings.pad) { try { els.input.focus({ preventScroll: true }); } catch (e) {} }
+}
+function record(ok, ms) {
+  var s = st.session;
+  s.n++; s.ms += ms; if (ok) s.ok++; s.last = Date.now();
+  s.streak = ok ? s.streak + 1 : 0; s.best = Math.max(s.best, s.streak);
+  var e = s.ex[st.q.ex] || (s.ex[st.q.ex] = { n: 0, ok: 0, ms: 0 });
+  e.n++; e.ms = Math.round(e.ms + ms); if (ok) e.ok++;
+  Store.queue(s, false);
+  renderScore(); renderStats();
+}
+function answerText(ans, q) {
+  if (q.pair) return sig3(ans[0]) + ' / ' + sig3(ans[1]) + ' bps';
+  return fmtVal(ans, q.unit);
+}
+function expectedText(q) {
+  if (q.pair) return sig3(q.expected[0]) + ' / ' + sig3(q.expected[1]) + ' bps';
+  return fmtVal(q.expected, q.unit);
+}
+function rangeText(q) {
+  if (q.pair) return '';
+  var e = q.expected, t = settings.tol, a = e * (1 - t), b = e * (1 + t);
+  var lo = Math.min(a, b), hi = Math.max(a, b);
+  return fmtVal(lo, q.unit).replace(/ (€|bps|az\.)$/, '') + ' – ' + fmtVal(hi, q.unit);
+}
+function submit() {
+  if (st.view !== 'q' || !st.q) return;
+  if (st.answered) { advance(); return; }
+  var raw = els.input.value;
+  if (!raw.trim()) { flashHint('Scrivi una risposta, ad esempio ' + (st.q.ph || '5.2k').replace('es. ', '') + '.'); return; }
+  var ans = parseAnswer(raw, st.q);
+  if (ans === null) {
+    flashHint(st.q.pair ? 'Non riesco a leggerla: scrivi bid e offer separati da “/”, ad esempio 240/260.' : 'Non riesco a leggerla: usa numeri come 5.2k, 6.3m o 2.4%.');
+    return;
+  }
+  var ms = performance.now() - st.qStart;
+  var g = grade(ans, st.q, settings.tol);
+  st.answered = true;
+  record(g.ok, ms);
+  showFeedback(g, ans, ms, false);
+}
+function skip() {
+  if (st.view !== 'q' || !st.q || st.answered) return;
+  var ms = performance.now() - st.qStart;
+  st.answered = true;
+  record(false, ms);
+  showFeedback({ ok: false, parts: [] }, null, ms, true);
+}
+function flashHint(msg) { els.hint.textContent = msg; els.hint.classList.add('warn'); }
+function showFeedback(g, ans, ms, skipped) {
+  var q = st.q;
+  els.input.readOnly = true;
+  els.card.classList.add(g.ok ? 'is-ok' : 'is-bad');
+  els.btnSkip.hidden = true;
+  els.hint.textContent = ''; els.hint.classList.remove('warn');
+  var errs = g.parts.map(function (p) { return fmtPct(p.err); }).join(' / ');
+  var signBad = g.parts.some(function (p) { return p.signBad; });
+  var html = '<div class="verdict ' + (g.ok ? 'ok' : 'bad') + '"><strong>' + (g.ok ? 'Giusto' : skipped ? 'Saltata' : 'Sbagliato') + '</strong>' +
+    '<span class="mono">' + (errs ? errs + ' · ' : '') + fmtSec(ms) + (signBad ? ' · segno sbagliato' : '') + '</span></div>';
+  html += '<dl class="cmp"><dt>Risposta</dt><dd>' + expectedText(q) + '</dd>';
+  if (ans !== null && ans !== undefined) html += '<dt>Tua (letta)</dt><dd>' + answerText(ans, q) + '</dd>';
+  var rt = rangeText(q);
+  if (rt) html += '<dt>Accettato</dt><dd>' + rt + '</dd>';
+  html += '</dl><div class="how">' + q.how + '</div>';
+  var finishing = st.session.mode === 'n20' && st.session.n >= SPRINT_N;
+  var label = finishing ? 'Vedi risultato' : 'Avanti';
+  els.fb.innerHTML = html;
+  els.fb.hidden = false;
+  els.btnGo.textContent = label; els.padEnter.textContent = label;
+  if (g.ok && settings.auto) st.autoTimer = setTimeout(advance, 650);
+  else if (!settings.pad) { try { els.input.focus({ preventScroll: true }); } catch (e) {} }
+}
+function advance() {
+  clearTimeout(st.autoTimer);
+  if (st.view !== 'q') return;
+  if (st.session.mode === 'n20' && st.session.n >= SPRINT_N) { endSession(); return; }
+  nextQuestion();
+}
+function endSession() {
+  var s = st.session;
+  if (s.done) return;
+  s.done = true; s.last = Date.now();
+  clearTimeout(st.autoTimer);
+  st.q = null;
+  Store.queue(s, true);
+  els.sumEyebrow.textContent = 'Sessione conclusa · ' + MODES[s.mode];
+  els.sumScore.textContent = s.ok + '/' + s.n;
+  els.sumMeta.textContent = s.n ? Math.round(s.ok / s.n * 100) + '% giuste · ' + fmtSec(s.ms / s.n) + ' di media · serie migliore ' + s.best : 'Nessuna risposta data.';
+  els.sumTable.innerHTML = exTable(s.ex, false);
+  showView('sum');
+  updatePill();
+  els.card.classList.remove('is-ok', 'is-bad');
+  setTimeout(function () { try { els.btnAgain.focus({ preventScroll: true }); } catch (e) {} }, 30);
+}
+
+/* ---------- inputs ---------- */
+els.form.addEventListener('submit', function (ev) { ev.preventDefault(); submit(); });
+els.btnSkip.addEventListener('click', skip);
+document.addEventListener('keydown', function (ev) {
+  if (ev.key !== 'Enter') return;
+  if (st.view === 'q' && st.answered && document.activeElement !== els.input) { ev.preventDefault(); advance(); }
+  else if (st.view === 'intro' && document.activeElement !== els.btnStart) { ev.preventDefault(); els.btnStart.click(); }
+});
+els.pad.addEventListener('click', function (ev) {
+  var b = ev.target.closest('button'); if (!b) return;
+  var k = b.getAttribute('data-k');
+  if (k === 'enter') { submit(); return; }
+  if (st.answered || st.view !== 'q') return;
+  var v = els.input.value;
+  if (k === 'back') els.input.value = v.slice(0, -1);
+  else els.input.value = v + (k === '-' ? '−' : k);
+  if (els.hint.classList.contains('warn')) { els.hint.textContent = HINT; els.hint.classList.remove('warn'); }
+});
+els.input.addEventListener('input', function () { if (els.hint.classList.contains('warn')) { els.hint.textContent = HINT; els.hint.classList.remove('warn'); } });
+
+/* ---------- clocks ---------- */
+function mmss(ms) { var s = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2); }
+function updatePill() {
+  var s = st.session; if (!s) return;
+  var txt = MODES[s.mode], live = false;
+  if (s.mode === 'n20') { txt = Math.min(s.n, SPRINT_N) + '/' + SPRINT_N; live = s.started && !s.done; }
+  if (s.mode === 't180') { txt = s.started && !s.done ? mmss(SPRINT_MS - (Date.now() - s.startedAt)) : (s.done ? '0:00' : '3:00'); live = s.started && !s.done; }
+  els.modePill.textContent = txt;
+  els.modePill.classList.toggle('live', live);
+}
+setInterval(function () {
+  if (st.view === 'q' && st.q && !st.answered) els.qTime.textContent = ((performance.now() - st.qStart) / 1000).toFixed(1) + ' s';
+  var s = st.session;
+  if (s && s.mode === 't180' && s.started && !s.done) {
+    var left = SPRINT_MS - (Date.now() - s.startedAt);
+    if (left <= 0) { endSession(); return; }
+    els.tbarFill.style.transform = 'scaleX(' + (left / SPRINT_MS).toFixed(4) + ')';
+  }
+  if (s && s.mode !== 'free') updatePill();
+}, 100);
+
+/* ---------- stats rendering ---------- */
+function accCell(ok, n) {
+  if (!n) return '<td>–</td>';
+  var a = ok / n, cls = a >= 0.8 ? 'acc-hi' : a < 0.5 ? 'acc-lo' : '';
+  return '<td class="' + cls + '">' + Math.round(a * 100) + '%</td>';
+}
+function exTable(exStats, withEmpty) {
+  var rows = '', tn = 0, tok = 0, tms = 0;
+  EX.forEach(function (e) {
+    var x = exStats[e.id];
+    if (!x || !x.n) { if (withEmpty) rows += '<tr><td>' + e.name + '</td><td>0</td><td>–</td><td>–</td></tr>'; return; }
+    tn += x.n; tok += x.ok; tms += x.ms;
+    rows += '<tr><td>' + e.name + '</td><td>' + x.ok + '/' + x.n + '</td>' + accCell(x.ok, x.n) + '<td>' + fmtSec(x.ms / x.n) + '</td></tr>';
+  });
+  if (!tn && !withEmpty) return '<p class="empty">Ancora nessuna risposta. Inizia dalla domanda qui accanto.</p>';
+  if (!tn) return '<p class="empty">Ancora nessuna risposta registrata.</p>';
+  rows += '<tr class="tot"><td>Totale</td><td>' + tok + '/' + tn + '</td>' + accCell(tok, tn) + '<td>' + fmtSec(tms / tn) + '</td></tr>';
+  return '<table><thead><tr><th>Esercizio</th><th>Giuste</th><th>%</th><th>Tempo medio</th></tr></thead><tbody>' + rows + '</tbody></table>';
+}
+function allSessions() {
+  var cur = st.session && st.session.n > 0 ? [sessionBody(st.session)] : [];
+  var curId = st.session && st.session.id;
+  return cur.concat(Store.sessions.filter(function (s) { return s.id !== curId; }));
+}
+var dtf = null;
+try { dtf = new Intl.DateTimeFormat('it-IT', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); } catch (e) {}
+function renderStats() {
+  var s = st.session;
+  els.sessTable.innerHTML = s ? exTable(s.ex, false) : '';
+  var all = allSessions(), agg = {};
+  all.forEach(function (x) {
+    Object.keys(x.ex || {}).forEach(function (k) {
+      var v = x.ex[k]; if (!EXMAP[k] || !v) return;
+      var a = agg[k] || (agg[k] = { n: 0, ok: 0, ms: 0 });
+      a.n += v.n || 0; a.ok += v.ok || 0; a.ms += v.ms || 0;
+    });
+  });
+  els.allTable.innerHTML = exTable(agg, true);
+  var recent = all.slice(0, 8);
+  if (!recent.length) { els.histTable.innerHTML = '<p class="empty">Le sessioni compariranno qui.</p>'; }
+  else {
+    els.histTable.innerHTML = '<table><thead><tr><th>Quando</th><th>Modalità</th><th>Giuste</th><th>%</th><th>Medio</th></tr></thead><tbody>' +
+      recent.map(function (x) {
+        var when = dtf ? dtf.format(new Date(x.t)) : new Date(x.t).toLocaleString();
+        var live = s && x.id === s.id && !s.done ? '<span class="live">in corso</span>' : '';
+        return '<tr><td>' + when + live + '</td><td>' + (MODES[x.mode] || '–') + '</td><td>' + x.ok + '/' + x.n + '</td>' + accCell(x.ok, x.n) + '<td>' + (x.n ? fmtSec(x.ms / x.n) : '–') + '</td></tr>';
+      }).join('') + '</tbody></table>';
+  }
+}
+function renderScore() {
+  var s = st.session;
+  els.scOk.textContent = s.ok + '/' + s.n;
+  els.scAcc.textContent = s.n ? Math.round(s.ok / s.n * 100) + '%' : '–';
+  els.scAvg.textContent = s.n ? fmtSec(s.ms / s.n) : '–';
+  els.scStreak.textContent = String(s.streak);
+  updatePill();
+}
+
+/* ---------- reset with in-page confirmation ---------- */
+function renderResetIdle() {
+  els.resetBox.innerHTML = '<button type="button" class="link" id="btnReset">Azzera storico</button>';
+  document.getElementById('btnReset').addEventListener('click', renderResetConfirm);
+}
+function renderResetConfirm() {
+  els.resetBox.innerHTML = '<span>Cancellare tutte le statistiche salvate?</span><button type="button" class="btn small primary" id="btnResetYes">Azzera</button><button type="button" class="btn small ghost" id="btnResetNo">Annulla</button>';
+  document.getElementById('btnResetYes').addEventListener('click', function () {
+    Store.reset(); st.session = null; startSession(); renderResetIdle();
+  });
+  document.getElementById('btnResetNo').addEventListener('click', renderResetIdle);
+}
+
+/* ---------- boot ---------- */
+renderChips();
+setSeg(els.segMode, settings.mode); setSeg(els.segTol, settings.tol); setSeg(els.segLevel, settings.hard ? 'hard' : 'base');
+els.optAuto.checked = settings.auto; els.optPad.checked = settings.pad;
+renderSummaryLine();
+try { if (window.matchMedia('(min-width: 900px)').matches) els.settings.open = true; } catch (e) {}
+Store.loadLocal();
+renderResetIdle();
+startSession();
+Store.connect();
+window.addEventListener('pagehide', function () { if (st.session && st.session.n > 0) { Store.pending.set(st.session.id, sessionBody(st.session)); Store.flush(); } });
+})();
+</script>
+
+<script>
+if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+  window.addEventListener('load', function () { navigator.serviceWorker.register('./sw.js').catch(function () {}); });
+}
+</script>
+</body>
+</html>
