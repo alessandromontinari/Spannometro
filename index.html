@@ -218,6 +218,11 @@ td .live { color: var(--amber); font-family: var(--f-body); font-size: .72rem; f
 .empty { color: var(--muted); font-size: .84rem; padding: 6px 0; margin: 0; }
 .acc-hi { color: var(--good); }
 .acc-lo { color: var(--bad); }
+.bk-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.bk-msg { font-size: .84rem; margin-top: 8px; display: flex; flex-direction: column; align-items: flex-start; }
+.bk-msg:empty { display: none; }
+.bk-imp { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; align-items: flex-start; }
+.bk-imp textarea { width: 100%; min-height: 70px; border: 1.5px solid var(--line-strong); border-radius: 9px; background: var(--surface-2); color: var(--ink); font-family: var(--f-mono); font-size: .75rem; padding: 8px; }
 .reset { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
 .reset span { font-size: .82rem; }
 .rules dl { margin: 0; display: grid; grid-template-columns: 1fr; gap: 0; }
@@ -344,6 +349,8 @@ td .live { color: var(--amber); font-family: var(--f-body); font-size: .72rem; f
         <div class="reset" id="resetBox">
           <button type="button" class="link" id="btnReset">Azzera storico</button>
         </div>
+        <h3>Cambio telefono</h3>
+        <div id="backupBox"></div>
       </section>
 
       <section class="panel rules" aria-label="Regole rapide">
@@ -817,8 +824,7 @@ var coarse = false;
 try { coarse = window.matchMedia('(pointer: coarse)').matches; } catch (e) {}
 var settings = { ex: {}, tol: 0.1, hard: false, mode: 'free', auto: true, pad: coarse };
 EX.forEach(function (e) { settings.ex[e.id] = true; });
-try {
-  var savedSet = JSON.parse(localStorage.getItem(SET_KEY) || 'null');
+function readSettings(savedSet) {
   if (savedSet && typeof savedSet === 'object') {
     if (savedSet.ex) EX.forEach(function (e) { if (typeof savedSet.ex[e.id] === 'boolean') settings.ex[e.id] = savedSet.ex[e.id]; });
     if ([0.05, 0.1, 0.2].indexOf(savedSet.tol) >= 0) settings.tol = savedSet.tol;
@@ -827,8 +833,9 @@ try {
     if (typeof savedSet.auto === 'boolean') settings.auto = savedSet.auto;
     if (typeof savedSet.pad === 'boolean') settings.pad = savedSet.pad;
   }
-} catch (e) {}
-if (!EX.some(function (e) { return settings.ex[e.id]; })) EX.forEach(function (e) { settings.ex[e.id] = true; });
+  if (!EX.some(function (e) { return settings.ex[e.id]; })) EX.forEach(function (e) { settings.ex[e.id] = true; });
+}
+try { readSettings(JSON.parse(localStorage.getItem(SET_KEY) || 'null')); } catch (e) {}
 function saveSettings() { try { localStorage.setItem(SET_KEY, JSON.stringify(settings)); } catch (e) {} }
 
 /* ---------- state ---------- */
@@ -1249,6 +1256,117 @@ function renderResetConfirm() {
   });
   document.getElementById('btnResetNo').addEventListener('click', renderResetIdle);
 }
+
+/* ---------- backup: move progress to another phone ---------- */
+function setupBackup(cfg) {
+  var box = cfg.el, text = '', parsed = null;
+  function p2(n) { return (n < 10 ? '0' : '') + n; }
+  function stamp(ms) { try { return new Intl.DateTimeFormat('it-IT', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(ms)); } catch (e) { return new Date(ms).toLocaleString(); } }
+  function fileName() { var d = new Date(); return cfg.app + '-progressi-' + d.getFullYear() + p2(d.getMonth() + 1) + p2(d.getDate()) + '.txt'; }
+  box.innerHTML =
+    '<p class="note">' + cfg.intro + '</p>' +
+    '<div class="bk-row"><button type="button" class="btn small primary" data-bk="export">Esporta progressi</button><button type="button" class="btn small ghost" data-bk="import">Importa progressi</button></div>' +
+    '<div class="bk-msg" role="status"></div>' +
+    '<div class="bk-imp" hidden>' +
+      '<button type="button" class="btn small ghost" data-bk="file">Scegli il file</button>' +
+      '<label class="note" for="' + cfg.app + '-bk-text">oppure incolla qui il testo esportato</label>' +
+      '<textarea id="' + cfg.app + '-bk-text" rows="3" spellcheck="false"></textarea>' +
+      '<button type="button" class="btn small primary" data-bk="paste">Importa il testo</button>' +
+    '</div>' +
+    '<input type="file" accept=".txt,.json,text/plain,application/json" hidden>';
+  var msg = box.querySelector('.bk-msg'), imp = box.querySelector('.bk-imp'), area = box.querySelector('textarea'), file = box.querySelector('input[type=file]');
+  function say(html) { msg.innerHTML = html; }
+  function copyLink() { return ' <button type="button" class="link" data-bk="copy">Copia il testo</button>'; }
+  function download(name) {
+    try {
+      var url = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));
+      var a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 5000);
+      say('Ho scaricato <b>' + name + '</b> nella cartella Download. Mandalo al telefono nuovo, oppure:' + copyLink());
+    } catch (e) { say('Non riesco a creare il file qui.' + copyLink()); }
+  }
+  function doExport() {
+    text = JSON.stringify(cfg.build());
+    var name = fileName();
+    if (window.claude && typeof window.claude.use === 'function') {
+      say('Preparo il file…');
+      window.claude.use('downloads').then(function (dl) {
+        if (!dl) { say('Da qui non posso salvare file:' + copyLink()); return; }
+        return dl.save({ filename: name, data: text }).then(function () { say('File <b>' + name + '</b> pronto. In alternativa:' + copyLink()); },
+          function (e) { say((e && e.code === 'declined' ? 'Salvataggio annullato.' : 'Il file non è stato salvato.') + copyLink()); });
+      });
+      return;
+    }
+    try {
+      var f = new File([text], name, { type: 'text/plain' });
+      if (navigator.canShare && navigator.canShare({ files: [f] })) {
+        navigator.share({ files: [f], title: 'Progressi ' + cfg.title }).then(function () {
+          say('File <b>' + name + '</b> condiviso. Aprilo con “Importa progressi” sul telefono nuovo.' + copyLink());
+        }, function (e) { if (e && e.name === 'AbortError') say('Condivisione annullata.' + copyLink()); else download(name); });
+        return;
+      }
+    } catch (e) {}
+    download(name);
+  }
+  function doCopy() {
+    function fallback() { imp.hidden = false; area.value = text; area.focus(); area.select(); say('Il testo è selezionato qui sotto: copialo e mandatelo.'); }
+    try { navigator.clipboard.writeText(text).then(function () { say('Testo copiato. Incollalo in un messaggio a te stesso, poi sul telefono nuovo incollalo in “Importa progressi”.'); }, fallback); }
+    catch (e) { fallback(); }
+  }
+  function handle(raw) {
+    var obj = null;
+    try { obj = JSON.parse(String(raw || '').trim()); } catch (e) {}
+    if (!obj || typeof obj !== 'object') { say('Non riconosco questo testo: deve essere il file creato con “Esporta progressi”.'); return; }
+    if (obj.app !== cfg.app) { say('Questo file è di un’altra app' + (obj.app ? ' (' + String(obj.app).replace(/[<>&]/g, '') + ')' : '') + ': importalo lì.'); return; }
+    parsed = obj;
+    say('<span>File del ' + stamp(obj.at || Date.now()) + ': ' + cfg.describe(obj) + '. Lo unisco ai progressi di questo telefono?</span>' +
+      '<span class="bk-row" style="margin-top:8px"><button type="button" class="btn small primary" data-bk="yes">Unisci</button><button type="button" class="btn small ghost" data-bk="no">Annulla</button></span>');
+  }
+  box.addEventListener('click', function (ev) {
+    var b = ev.target.closest('[data-bk]'); if (!b) return;
+    var k = b.getAttribute('data-bk');
+    if (k === 'export') doExport();
+    else if (k === 'copy') doCopy();
+    else if (k === 'import') { imp.hidden = !imp.hidden; say(''); }
+    else if (k === 'file') file.click();
+    else if (k === 'paste') { if (area.value.trim()) handle(area.value); else say('Incolla prima il testo esportato.'); }
+    else if (k === 'yes' && parsed) { try { cfg.apply(parsed); say('Fatto: progressi importati.'); imp.hidden = true; area.value = ''; } catch (e) { say('Qualcosa è andato storto durante l’importazione.'); } parsed = null; }
+    else if (k === 'no') { parsed = null; say(''); }
+  });
+  file.addEventListener('change', function () {
+    var f = file.files && file.files[0]; if (!f) return;
+    var r = new FileReader();
+    r.onload = function () { handle(r.result); file.value = ''; };
+    r.onerror = function () { say('Non riesco a leggere il file.'); };
+    r.readAsText(f);
+  });
+}
+
+setupBackup({
+  app: 'spannometro', title: 'Spannometro', el: document.getElementById('backupBox'),
+  intro: 'Per passare a un altro telefono: esporta qui, mandati il file e importalo nell’app sul telefono nuovo.',
+  build: function () { return { app: 'spannometro', v: 1, at: Date.now(), settings: settings, sessions: allSessions() }; },
+  describe: function (o) {
+    var ss = Array.isArray(o.sessions) ? o.sessions : [], n = 0;
+    ss.forEach(function (x) { n += +x.n || 0; });
+    return ss.length + (ss.length === 1 ? ' sessione' : ' sessioni') + ', ' + n + ' risposte';
+  },
+  apply: function (o) {
+    readSettings(o.settings); saveSettings();
+    renderChips(); setSeg(els.segMode, settings.mode); setSeg(els.segTol, settings.tol); setSeg(els.segLevel, settings.hard ? 'hard' : 'base');
+    els.optAuto.checked = settings.auto; els.optPad.checked = settings.pad; renderSummaryLine(); applyPad();
+    var have = {}, added = [];
+    allSessions().forEach(function (x) { have[x.id] = 1; });
+    (Array.isArray(o.sessions) ? o.sessions : []).forEach(function (x) {
+      if (!x || typeof x.id !== 'string' || typeof x.t !== 'number' || typeof x.n !== 'number' || have[x.id]) return;
+      have[x.id] = 1; added.push(x);
+    });
+    Store.sessions = Store.sessions.concat(added).sort(function (a, b) { return b.t - a.t; }).slice(0, 300);
+    if (Store.kind === 'db') { added.forEach(function (x) { Store.pending.set(x.id, x); }); Store.flush(); }
+    else Store.saveLocal();
+    renderStats();
+  }
+});
 
 /* ---------- boot ---------- */
 renderChips();
