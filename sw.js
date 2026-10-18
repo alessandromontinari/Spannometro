@@ -1,5 +1,6 @@
 /* Spannometro service worker: keeps the app usable offline. */
-const CACHE = 'spannometro-2026-10-15-1';
+const PREFIX = 'spannometro-';
+const CACHE = PREFIX + '2026-10-18-2';
 const PRECACHE = [
   "./",
   "./index.html",
@@ -16,47 +17,49 @@ const PRECACHE = [
   "./schibsted-grotesk-latin-600-normal.woff2",
   "./schibsted-grotesk-latin-700-normal.woff2"
 ];
+const OFFLINE = '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+  + '<title>Spannometro</title><body style="font-family:system-ui,sans-serif;padding:32px 20px;line-height:1.5">'
+  + '<h1 style="font-size:20px">Spannometro non riesce a partire</h1>'
+  + '<p>Il telefono sembra offline e l’app non è ancora stata salvata per l’uso senza rete. '
+  + 'Riprova quando sei connesso: dopo il primo avvio funziona anche offline.</p>'
+  + '<p><a href="./">Riprova</a></p></body>';
 
-self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(CACHE).then((c) => c.addAll(PRECACHE)).then(() => self.skipWaiting()));
+self.addEventListener('install', (e) => {
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(PRECACHE)).then(() => self.skipWaiting()));
 });
 
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
-      .then(() => self.clients.claim())
-  );
+/* Other apps on the same site keep their caches: only this app's old versions are removed. */
+self.addEventListener('activate', (e) => {
+  e.waitUntil(caches.keys()
+    .then((ks) => Promise.all(ks.filter((k) => k.startsWith(PREFIX) && k !== CACHE).map((k) => caches.delete(k))))
+    .then(() => self.clients.claim()));
 });
 
-/* Pages: try the network first (so updates show at once), fall back to the saved copy offline.
-   Everything else: serve from cache at once and refresh it in the background. */
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
   if (req.mode === 'navigate') {
+    /* Pages: network first so updates show at once; after 3.5 s use the saved copy if there is one. */
     event.respondWith((async () => {
       const cache = await caches.open(CACHE);
+      const net = fetch(req).then((res) => { if (res && res.ok) cache.put(req, res.clone()); return res; });
+      net.catch(() => {});
       try {
-        const res = await Promise.race([fetch(req), new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 3500))]);
-        if (res && res.ok) { cache.put(req, res.clone()); return res; }
-        throw new Error('bad response');
-      } catch (e) {
-        return (await cache.match(req, { ignoreSearch: true })) || (await cache.match('./index.html')) || (await cache.match('./')) || Response.error();
-      }
+        const first = await Promise.race([net, new Promise((r) => setTimeout(() => r(null), 3500))]);
+        if (first && first.ok) return first;
+      } catch (e) {}
+      const saved = (await cache.match(req, { ignoreSearch: true })) || (await cache.match('./index.html')) || (await cache.match('./'));
+      if (saved) return saved;
+      try { return await net; }
+      catch (e) { return new Response(OFFLINE, { headers: { 'Content-Type': 'text/html; charset=utf-8' } }); }
     })());
     return;
   }
-  event.respondWith(
-    caches.open(CACHE).then(async (cache) => {
-      const cached = await cache.match(req, { ignoreSearch: true }) ||
-        (req.mode === 'navigate' ? await cache.match('./index.html') : undefined);
-      const network = fetch(req).then((res) => {
-        if (res && res.ok) cache.put(req, res.clone());
-        return res;
-      }).catch(() => cached);
-      if (cached) { event.waitUntil(network); return cached; }
-      return network;
-    })
-  );
+  /* Everything else: saved copy at once, refreshed in the background. */
+  event.respondWith(caches.open(CACHE).then(async (cache) => {
+    const cached = await cache.match(req, { ignoreSearch: true });
+    const network = fetch(req).then((res) => { if (res && res.ok) cache.put(req, res.clone()); return res; }).catch(() => cached);
+    if (cached) { event.waitUntil(network); return cached; }
+    return network;
+  }));
 });
