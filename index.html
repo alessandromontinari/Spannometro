@@ -362,6 +362,7 @@ td .live { color: var(--amber); font-family: var(--f-body); font-size: .72rem; f
           <div class="r"><dt>Bid / offer in bps</dt><dd>prezzo opzione / spot × 10 000</dd></div>
           <div class="r"><dt>PnL</dt><dd>€ = nominale × bps / 10 000</dd></div>
           <div class="r"><dt>Delta hedge</dt><dd>azioni = − size × lot × Δ</dd></div>
+          <div class="r"><dt>Delta da simulazione</dt><dd>Δ vero = Δ sim + Γ(1%) × (prezzo − ref) / ref × 100</dd></div>
           <div class="r"><dt>Gamma PnL</dt><dd>½ × Γ(1%) × move² / 100</dd></div>
           <div class="r"><dt>Breakeven gamma/theta</dt><dd>move = √(200 × θ / Γ)</dd></div>
           <div class="r"><dt>Call o put ATM</dt><dd>≈ 0.4 × σ × √T × S</dd></div>
@@ -474,10 +475,11 @@ function parseAnswer(raw, q) {
   var v = parseOne(raw, q.unit);
   return isNaN(v) ? null : v;
 }
+/* tolerance is ±tol of the answer; an exercise can widen the base (q.tolBase) when the answer is a small sum of big terms */
 function grade(ans, q, tol) {
-  function one(a, e) { return { err: (a - e) / Math.abs(e), ok: Math.abs(a - e) <= tol * Math.abs(e) * (1 + 1e-9), signBad: a * e < 0 }; }
+  function one(a, e, base) { base = base || Math.abs(e); var ok = Math.abs(a - e) <= tol * base * (1 + 1e-9); return { err: (a - e) / base, ok: ok, signBad: a * e < 0 && !ok }; }
   if (q.pair) { var r1 = one(ans[0], q.expected[0]), r2 = one(ans[1], q.expected[1]); return { ok: r1.ok && r2.ok, parts: [r1, r2] }; }
-  var r = one(ans, q.expected);
+  var r = one(ans, q.expected, q.tolBase);
   return { ok: r.ok, parts: [r] };
 }
 
@@ -784,6 +786,31 @@ function genAtm(hard) {
   };
 }
 
+/* 8) Delta vero da una simulazione vecchia: delta + gamma 1% × move % dalla ref */
+function genDeltaSim(hard) {
+  var u = genUnd(hard, 'stock'), S = u.S;
+  var dd = S < 1 ? (hard ? 4 : 3) : S < 10 ? (hard ? 3 : 2) : S < 100 ? 2 : (hard ? 2 : 1), tick = Math.pow(10, -dd);
+  var mv = sgn() * (hard ? rnd(0.15, 6) : pick([0.5, 1, 1, 1.5, 2, 2, 2.5, 3, 4, 5])) / 100;
+  var P = roundTo(S * (1 + mv), tick);
+  if (P === S) P = clean(S + (mv < 0 ? -tick : tick));
+  var refStr = u.str, pxStr = hard ? fmtFixed(P, dd) : fmtAuto(P, dd);
+  var m = (P - S) / S * 100;                                     /* move in % */
+  var D = sgn() * sigRound(logU(3e3, 3e6), hard ? 3 : 2);
+  var G = (chance(0.55) ? 1 : -1) * sigRound(Math.abs(D) * logU(0.25, 1.5) / Math.max(0.15, Math.abs(m)), hard ? 3 : 2);   /* correction 25–150% of the delta: ignoring gamma is never close enough */
+  var adj = G * m, exp = D + adj;
+  var mStr = (m < 0 ? MINUS : '+') + sig3(Math.abs(m)) + '%', mNum = (m < 0 ? MINUS : '') + sig3(Math.abs(m));
+  return {
+    tag: G > 0 ? 'gamma lungo' : 'gamma corto',
+    fields: [{ l: 'Ref simulazione', v: refStr }, { l: 'Prezzo attuale', v: pxStr, cls: m < 0 ? 'neg' : 'pos' },
+      { l: 'Delta simulato', v: plus(D, fmtShort(D)) + ' az.' }, { l: 'Gamma 1%', v: plus(G, fmtShort(G)) + ' az.' }],
+    prompt: 'Delta vero adesso, in azioni? (con segno)', unit: 'az', expected: exp, tolBase: Math.max(Math.abs(exp), Math.abs(adj)), ph: 'es. 11k',
+    how: 'move = (' + pxStr + ' − ' + refStr + ') / ' + refStr + ' = ' + mStr + '<br>' +
+      'gamma × move = ' + plus(G, fmtShort(G)) + ' × ' + (m < 0 ? '(' + mNum + ')' : mNum) + ' = ' + plus(adj, fmtShort(adj)) + ' az.<br>' +
+      'delta vero = ' + plus(D, fmtShort(D)) + ' ' + (adj < 0 ? MINUS : '+') + ' ' + fmtShort(Math.abs(adj)) + ' = <b>' + plus(exp, fmtShort(exp)) + ' az.</b>' +
+      '<span class="tip">Il gamma 1% si moltiplica per il move in punti percentuali (−2.5% → × −2.5). ' + (G > 0 ? 'Gamma lungo: il delta segue lo spot (sale se sale, scende se scende).' : 'Gamma corto: il delta va contro lo spot (scende se lo spot sale).') + ' Tolleranza calcolata sul più grande tra il risultato e la correzione da gamma.</span>'
+  };
+}
+
 var EX = [
   { id: 'nom', name: 'Nominale', desc: 'size × lot × prezzo', core: true, gen: genNom },
   { id: 'spr', name: 'Spread → bps', desc: 'larghezza, spot e opzioni', core: true, gen: genSpread },
@@ -792,12 +819,13 @@ var EX = [
   { id: 'prem', name: 'Premio', desc: '% ↔ € e premio totale', core: false, gen: genPrem },
   { id: 'delta', name: 'Delta hedge', desc: 'azioni e delta in €', core: false, gen: genDelta },
   { id: 'greek', name: 'PnL greche', desc: 'delta, vega, gamma, breakeven', core: false, gen: genGreek },
-  { id: 'atm', name: 'ATM e vol', desc: '0.4σ√T, vol implicita, move 1σ', core: false, gen: genAtm }
+  { id: 'atm', name: 'ATM e vol', desc: '0.4σ√T, vol implicita, move 1σ', core: false, gen: genAtm },
+  { id: 'dsim', name: 'Delta da simulazione', desc: 'ref, gamma 1% e prezzo nuovo', core: false, gen: genDeltaSim }
 ];
 var EXMAP = {}; EX.forEach(function (e) { EXMAP[e.id] = e; });
 function makeQuestion(exId, hard) { var q = EXMAP[exId].gen(hard); q.ex = exId; return q; }
 
-globalThis.__SPN = { EX: EX, makeQuestion: makeQuestion, parseAnswer: parseAnswer, grade: grade, fmtVal: fmtVal, fmtShort: fmtShort, parseOne: parseOne };
+globalThis.__SPN = { EX: EX, makeQuestion: makeQuestion, parseAnswer: parseAnswer, grade: grade, rangeOf: function (q, tol) { var w = tol * (q.tolBase || Math.abs(q.expected)); return [q.expected - w, q.expected + w]; }, fmtVal: fmtVal, fmtShort: fmtShort, parseOne: parseOne };
 if (typeof document === 'undefined') return;
 
 /* ================= UI ================= */
@@ -1071,8 +1099,8 @@ function expectedText(q) {
 }
 function rangeText(q) {
   if (q.pair) return '';
-  var e = q.expected, t = settings.tol, a = e * (1 - t), b = e * (1 + t);
-  var lo = Math.min(a, b), hi = Math.max(a, b);
+  var e = q.expected, w = settings.tol * (q.tolBase || Math.abs(e));
+  var lo = e - w, hi = e + w;
   return fmtVal(lo, q.unit).replace(/ (€|bps|az\.)$/, '') + ' – ' + fmtVal(hi, q.unit);
 }
 function submit() {

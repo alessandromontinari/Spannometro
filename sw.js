@@ -1,6 +1,6 @@
 /* Spannometro service worker: keeps the app usable offline. */
 const PREFIX = 'spannometro-';
-const CACHE = PREFIX + '2026-10-18-2';
+const CACHE = PREFIX + '2026-10-19-1';
 const PRECACHE = [
   "./",
   "./index.html",
